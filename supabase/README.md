@@ -43,6 +43,14 @@ Em instalações novas, execute `migrations/20260921030000_add_room_routine_cate
 
 Execute `migrations/20260921050000_task_priorities.sql`. Ela adiciona descrição e ordem manual às abas da TODO List e permite marcar tarefas gerais como importantes.
 
+### Ativar Dados de Saúde
+
+Execute `migrations/20260921060000_health_data.sql`. Ela cria os registros diários de peso, sessões de medidas corporais, partes do corpo personalizáveis e as respectivas regras de segurança.
+
+### Importar medidas antigas do Excel
+
+Na tela **Dados de Saúde > Minhas medidas corporais > Importar**, baixe o modelo CSV. O formato usa uma linha por medida: `date;body_part;value;unit;instructions`. Datas podem estar em `DD/MM/AAAA` ou `AAAA-MM-DD`; uma linha cuja parte do corpo seja `Peso` alimenta o histórico de peso em kg. Salve a planilha como CSV antes de enviá-la.
+
 ## 2. Configurar o ambiente local
 
 1. Copie `.env.example` para `.env.local` na raiz do projeto.

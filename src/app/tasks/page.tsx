@@ -50,11 +50,11 @@ export default async function TasksPage({ searchParams }: Props) {
         <section className="rounded-3xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5">
           <nav aria-label="Abas da TODO List" className="flex flex-wrap items-center gap-2">
             <Link href="/tasks" className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition ${selectedView === "all" ? "bg-emerald-700 text-white" : "bg-stone-100 hover:bg-stone-200"}`}><span aria-hidden="true">✦</span>TODAS</Link>
-            <Link href="/tasks?list=pending" className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition ${selectedView === "pending" ? "bg-emerald-700 text-white" : "bg-stone-100 hover:bg-stone-200"}`}><span aria-hidden="true">○</span>Pendente</Link>
-            {lists.map((list) => <Link key={list.id} href={`/tasks?list=${list.id}`} className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition ${activeList?.id === list.id ? "bg-emerald-700 text-white" : "bg-stone-100 hover:bg-stone-200"}`}><span aria-hidden="true">▣</span>{list.name}</Link>)}
+            <Link href="/tasks?list=pending" className={`rounded-xl px-4 py-2.5 text-sm font-medium transition ${selectedView === "pending" ? "bg-emerald-700 text-white" : "bg-stone-100 hover:bg-stone-200"}`}>Pendente</Link>
+            {lists.map((list) => <Link key={list.id} href={`/tasks?list=${list.id}`} className={`rounded-xl px-4 py-2.5 text-sm font-medium transition ${activeList?.id === list.id ? "bg-emerald-700 text-white" : "bg-stone-100 hover:bg-stone-200"}`}>{list.name}</Link>)}
           </nav>
 
-          <div className="mt-4 grid gap-4 border-t border-stone-100 pt-4 lg:grid-cols-2">
+          <div className="mt-4 grid gap-3 border-t border-stone-100 pt-4 lg:grid-cols-3">
             <details className="group rounded-2xl bg-stone-50 p-4">
               <summary className="cursor-pointer text-sm font-semibold text-emerald-800">＋ Criar nova aba</summary>
               <form action={createTaskList} className="mt-4 space-y-3">
@@ -65,14 +65,12 @@ export default async function TasksPage({ searchParams }: Props) {
             </details>
 
             {lists.length > 1 && <details className="group rounded-2xl bg-stone-50 p-4"><summary className="cursor-pointer text-sm font-semibold text-emerald-800">↕ Ordenar abas</summary><p className="mt-2 text-xs leading-5 text-stone-500">A ordem definida aqui também é usada nas seções da aba TODAS.</p><div className="mt-3 space-y-2">{lists.map((list, index) => <div key={list.id} className="flex items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white px-3 py-2"><span className="truncate text-sm font-medium"><span className="mr-2 text-stone-400">{index + 1}.</span>{list.name}</span><div className="flex gap-1"><OrderButton listId={list.id} direction="up" disabled={index === 0} label={`Subir ${list.name}`} symbol="↑" /><OrderButton listId={list.id} direction="down" disabled={index === lists.length - 1} label={`Descer ${list.name}`} symbol="↓" /></div></div>)}</div></details>}
-          </div>
-        </section>
 
-        <section className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
-          <p className="text-sm font-medium text-stone-500">Visão atual</p>
-          <h1 className="mt-1 text-2xl font-semibold">{selectedView === "all" ? "Todas as tarefas" : activeList?.name ?? "Pendente"}</h1>
-          {selectedView === "custom" && activeList?.description && <p className="mt-2 max-w-3xl text-sm leading-6 text-stone-600">{activeList.description}</p>}
-          {canCreateTask ? <details className="group mt-5 rounded-2xl bg-stone-50 p-4" open={!sections[0]?.tasks.length}><summary className="cursor-pointer list-none font-semibold"><span className="group-open:hidden">＋ Nova tarefa</span><span className="hidden group-open:inline">Nova tarefa</span></summary><form action={createTask} className="mt-4 flex flex-col gap-3 sm:flex-row"><input type="hidden" name="isDaily" value="false" /><input type="hidden" name="taskListId" value={activeList?.id ?? ""} /><label className="flex-1 text-sm font-medium">Tarefa<input name="title" required maxLength={240} placeholder="O que precisa fazer?" className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><button className="mt-6 rounded-xl bg-emerald-700 px-5 py-3 font-medium text-white hover:bg-emerald-800 sm:mt-auto">Adicionar</button></form></details> : <p className="mt-4 rounded-2xl bg-stone-50 px-4 py-4 text-sm leading-6 text-stone-600">As tarefas estão agrupadas por aba. Abra uma aba específica para criar uma nova tarefa nela.</p>}
+            <details className="group rounded-2xl bg-stone-50 p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-emerald-800">ⓘ Informações e nova tarefa</summary>
+              <div className="mt-4"><h2 className="text-lg font-semibold">{selectedView === "all" ? "Todas as tarefas" : activeList?.name ?? "Pendente"}</h2>{selectedView === "custom" && activeList?.description && <p className="mt-2 text-sm leading-6 text-stone-600">{activeList.description}</p>}{canCreateTask ? <form action={createTask} className="mt-4 space-y-3"><input type="hidden" name="isDaily" value="false" /><input type="hidden" name="taskListId" value={activeList?.id ?? ""} /><label className="block text-sm font-medium">Nova tarefa<input name="title" required maxLength={240} placeholder="O que precisa fazer?" className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><button className="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-800">Adicionar</button></form> : <p className="mt-2 text-sm leading-6 text-stone-600">Abra uma aba específica para criar uma tarefa nela.</p>}</div>
+            </details>
+          </div>
         </section>
 
         <div className="space-y-5">{sections.map((section) => <TaskGroup key={section.id} section={section} />)}</div>
@@ -90,7 +88,7 @@ function OrderButton({ listId, direction, disabled, label, symbol }: { listId: s
 }
 
 function TaskGroup({ section }: { section: TaskSection }) {
-  return <section className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6"><div className="flex items-start justify-between gap-4"><div><p className="text-sm font-medium text-stone-500">Aba</p><h2 className="mt-1 text-xl font-semibold">{section.title}</h2>{section.description && <p className="mt-2 text-sm leading-6 text-stone-600">{section.description}</p>}</div><span className="shrink-0 rounded-full bg-stone-100 px-3 py-1 text-sm text-stone-600">{section.tasks.length}</span></div>{section.tasks.length ? <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{section.tasks.map((task) => <TaskCard key={task.id} task={task} />)}</div> : <p className="mt-5 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-8 text-center text-sm text-stone-500">Nenhuma tarefa pendente nesta aba.</p>}</section>;
+  return <section className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6"><div className="flex items-start justify-between gap-4"><div><h2 className="text-xl font-semibold">{section.title}</h2>{section.description && <p className="mt-2 text-sm leading-6 text-stone-600">{section.description}</p>}</div><span className="shrink-0 rounded-full bg-stone-100 px-3 py-1 text-sm text-stone-600">{section.tasks.length}</span></div>{section.tasks.length ? <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{section.tasks.map((task) => <TaskCard key={task.id} task={task} />)}</div> : <p className="mt-5 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-8 text-center text-sm text-stone-500">Nenhuma tarefa pendente nesta aba.</p>}</section>;
 }
 
 function TaskCard({ task }: { task: Task }) {
