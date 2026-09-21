@@ -1,41 +1,23 @@
+import { hasSupabaseEnv } from "@/lib/supabase/env";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+
 export default function Home() {
+  if (hasSupabaseEnv()) redirect("/today");
+
   return (
-    <main className="min-h-screen bg-stone-50 px-6 py-12 text-stone-900 sm:px-10 lg:px-16">
-      <div className="mx-auto flex min-h-[calc(100vh-6rem)] max-w-5xl flex-col justify-between">
-        <header className="flex items-center justify-between">
-          <span className="text-lg font-semibold tracking-tight">Meu Diário</span>
-          <span className="rounded-full border border-stone-200 bg-white px-3 py-1 text-sm text-stone-600">
-            Em construção
-          </span>
-        </header>
-
-        <section className="my-16 max-w-3xl">
-          <p className="mb-4 text-sm font-medium tracking-[0.2em] text-emerald-700 uppercase">
-            Diary tracker
-          </p>
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-6xl">
-            Um lugar simples para registrar seus dias.
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-600">
-            Esta é a base da aplicação. Em seguida, vamos conectar o Supabase
-            para salvar entradas, autenticar usuários e montar o seu diário.
-          </p>
-        </section>
-
-        <section className="grid gap-4 md:grid-cols-3">
-          {[
-            ["1", "Next.js", "Estrutura da aplicação pronta com App Router."],
-            ["2", "TypeScript", "Código com tipos para evoluir com segurança."],
-            ["3", "Tailwind CSS", "Estilos rápidos e responsivos já configurados."],
-          ].map(([number, title, description]) => (
-            <article key={number} className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-              <span className="text-sm font-semibold text-emerald-700">{number}</span>
-              <h2 className="mt-4 text-xl font-semibold">{title}</h2>
-              <p className="mt-2 leading-7 text-stone-600">{description}</p>
-            </article>
-          ))}
-        </section>
-      </div>
+    <main className="grid min-h-screen place-items-center bg-stone-50 px-6 py-12 text-stone-900">
+      <section className="w-full max-w-xl rounded-3xl border border-stone-200 bg-white p-7 shadow-sm sm:p-10">
+        <p className="text-sm font-semibold tracking-[0.18em] text-emerald-700 uppercase">Diary Tracker</p>
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">Conecte o Supabase para começar.</h1>
+        <p className="mt-4 leading-7 text-stone-600">A interface e a segurança já estão prontas. Falta informar a URL e a chave pública do seu projeto Supabase.</p>
+        <ol className="mt-7 space-y-3 rounded-2xl bg-stone-50 p-5 text-sm leading-6 text-stone-700">
+          <li><span className="font-semibold">1.</span> Execute a migração SQL no Supabase.</li>
+          <li><span className="font-semibold">2.</span> Crie sua conta privada no painel de autenticação.</li>
+          <li><span className="font-semibold">3.</span> Crie o arquivo <code>.env.local</code> a partir de <code>.env.example</code>.</li>
+        </ol>
+        <Link className="mt-7 inline-flex rounded-xl bg-emerald-700 px-4 py-3 font-medium text-white transition hover:bg-emerald-800" href="https://supabase.com/dashboard">Abrir Supabase</Link>
+      </section>
     </main>
   );
 }
