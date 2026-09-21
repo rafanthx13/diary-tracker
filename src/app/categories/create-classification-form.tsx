@@ -30,12 +30,12 @@ export function CreateClassificationForm({ categories }: { categories: CategoryO
         </label>
         <label className="block text-sm font-medium">
           Categoria
-          <select name="categoryId" required defaultValue="" className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100">
-            <option value="" disabled>Escolha uma categoria</option>
+          <select name="categoryId" defaultValue="" className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100">
+            <option value="">Sem categoria</option>
             {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
           </select>
         </label>
-        <button disabled={!categories.length || isPending} className="w-full rounded-xl bg-emerald-700 px-4 py-3 font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50">
+        <button disabled={isPending} className="w-full rounded-xl bg-emerald-700 px-4 py-3 font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50">
           {isPending ? "Criando..." : "Criar classificação"}
         </button>
       </form>

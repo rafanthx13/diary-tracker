@@ -14,32 +14,60 @@ function requiredText(formData: FormData, field: string) {
 }
 
 function asIsoDate(value: string) {
-  const date = new Date(value);
+  const localDateTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(value);
+  const normalized = localDateTime ? `${value.length === 16 ? `${value}:00` : value}-03:00` : value;
+  const date = new Date(normalized);
   if (Number.isNaN(date.getTime())) throw new Error("Data ou horário inválido.");
   return date.toISOString();
 }
 
-function colorValue(formData: FormData) {
-  const color = requiredText(formData, "color");
-  if (!/^#[0-9a-fA-F]{6}$/.test(color)) {
-    throw new Error("A cor informada é inválida.");
+function completionDate(formData: FormData) {
+  const value = formData.get("completedOn")?.toString().trim();
+  if (!value) return saoPauloDate();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || new Date(`${value}T12:00:00-03:00`).toISOString().slice(0, 10) !== value) {
+    throw new Error("A data da conclusão é inválida.");
   }
-  return color;
+  if (value > saoPauloDate()) throw new Error("Não é possível concluir uma tarefa em uma data futura.");
+  return value;
+}
+
+function activityInsertError(error: { code?: string; message?: string }) {
+  if (error.code === "23505") {
+    return new Error("Já existe uma atividade em andamento. Encerre-a antes de iniciar outra.");
+  }
+  if (error.code === "42501") {
+    return new Error("Sua conta não tem permissão para registrar atividades. Execute a migração 20260921010000 no Supabase.");
+  }
+  if (error.code === "23503") {
+    return new Error("A classificação escolhida não existe mais. Atualize a página e escolha outra.");
+  }
+
+  return new Error(`Não foi possível iniciar a atividade${error.code ? ` (${error.code})` : ""}: ${error.message ?? "erro desconhecido"}`);
 }
 
 function revalidateDiaryConfiguration() {
   revalidatePath("/categories");
+  revalidatePath("/today/categories");
   revalidatePath("/today");
+  revalidatePath("/today/reports/[period]", "page");
 }
 
 function revalidateTasks() {
   revalidatePath("/tasks");
   revalidatePath("/routine");
   revalidatePath("/tasks/completed");
+  revalidatePath("/tasks/reports");
+  revalidatePath("/diary-task");
+  revalidatePath("/diary-task/reports/[period]", "page");
 }
 
 function optionalCategoryId(formData: FormData) {
   const value = formData.get("categoryId")?.toString().trim();
+  return value || null;
+}
+
+function optionalTaskListId(formData: FormData) {
+  const value = formData.get("taskListId")?.toString().trim();
   return value || null;
 }
 
@@ -54,6 +82,29 @@ async function ensureAvailableCategory(categoryId: string) {
   if (error || !data) throw new Error("A categoria selecionada não está disponível.");
 }
 
+async function ensureAvailableClassification(classificationId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("classifications")
+    .select("id")
+    .eq("id", classificationId)
+    .maybeSingle();
+
+  if (error || !data) throw new Error("A classificação selecionada não está disponível.");
+}
+
+async function ensureAvailableTaskList(taskListId: string, userId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("task_lists")
+    .select("id")
+    .eq("id", taskListId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error || !data) throw new Error("A aba escolhida não está disponível.");
+}
+
 export async function signIn(formData: FormData) {
   const email = requiredText(formData, "email");
   const password = requiredText(formData, "password");
@@ -61,7 +112,7 @@ export async function signIn(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) redirect("/login?erro=credenciais");
-  redirect("/today");
+  redirect("/");
 }
 
 export async function signOut() {
@@ -83,7 +134,7 @@ export async function startActivity(formData: FormData) {
     started_at: new Date().toISOString(),
   });
 
-  if (error) throw new Error("Não foi possível iniciar a atividade.");
+  if (error) throw activityInsertError(error);
   revalidatePath("/today");
 }
 
@@ -122,41 +173,44 @@ export async function createManualActivity(formData: FormData) {
     ended_at: endedAt,
   });
 
-  if (error) throw new Error("Não foi possível salvar a atividade.");
+  if (error) throw activityInsertError(error);
   revalidatePath("/today");
 }
 
-export async function createCategory(formData: FormData) {
-  await requireUser();
-  const name = requiredText(formData, "name");
-  const color = colorValue(formData);
-  const supabase = await createClient();
-  const { error } = await supabase.from("categories").insert({ name, color });
+export async function updateActivity(formData: FormData) {
+  const userId = await requireUser();
+  const activityId = requiredText(formData, "activityId");
+  const title = requiredText(formData, "title");
+  const classificationId = requiredText(formData, "classificationId");
+  const startedAt = asIsoDate(requiredText(formData, "startedAt"));
+  const endedAtValue = formData.get("endedAt")?.toString().trim();
+  const endedAt = endedAtValue ? asIsoDate(endedAtValue) : null;
 
-  if (error) throw new Error("Não foi possível criar a categoria. Escolha outro nome, se ele já existir.");
-  revalidateDiaryConfiguration();
-}
+  if (endedAt && new Date(endedAt) <= new Date(startedAt)) {
+    throw new Error("O fim precisa ser posterior ao início.");
+  }
 
-export async function updateCategory(formData: FormData) {
-  await requireUser();
-  const categoryId = requiredText(formData, "categoryId");
-  const name = requiredText(formData, "name");
-  const color = colorValue(formData);
+  await ensureAvailableClassification(classificationId);
   const supabase = await createClient();
   const { error } = await supabase
-    .from("categories")
-    .update({ name, color })
-    .eq("id", categoryId);
+    .from("activities")
+    .update({ title, classification_id: classificationId, started_at: startedAt, ended_at: endedAt })
+    .eq("id", activityId)
+    .eq("user_id", userId);
 
-  if (error) throw new Error("Não foi possível atualizar a categoria.");
-  revalidateDiaryConfiguration();
+  if (error?.code === "23P01") throw new Error("Este período se sobrepõe a outra atividade registrada.");
+  if (error?.code === "23505") throw new Error("Já existe outra atividade em andamento.");
+  if (error) throw new Error("Não foi possível atualizar a atividade.");
+
+  revalidatePath("/today");
+  revalidatePath("/today/reports/[period]", "page");
 }
 
 async function saveClassification(formData: FormData) {
   await requireUser();
   const name = requiredText(formData, "name");
-  const categoryId = requiredText(formData, "categoryId");
-  await ensureAvailableCategory(categoryId);
+  const categoryId = optionalCategoryId(formData);
+  if (categoryId) await ensureAvailableCategory(categoryId);
   const supabase = await createClient();
   const { error } = await supabase.from("classifications").insert({
     category_id: categoryId,
@@ -203,8 +257,8 @@ export async function updateClassification(formData: FormData) {
   await requireUser();
   const classificationId = requiredText(formData, "classificationId");
   const name = requiredText(formData, "name");
-  const categoryId = requiredText(formData, "categoryId");
-  await ensureAvailableCategory(categoryId);
+  const categoryId = optionalCategoryId(formData);
+  if (categoryId) await ensureAvailableCategory(categoryId);
   const supabase = await createClient();
   const { error } = await supabase
     .from("classifications")
@@ -219,12 +273,9 @@ export async function restoreInitialCatalog() {
   await requireUser();
   const supabase = await createClient();
   const defaultCategories = [
-    { name: "TASK", color: "#2563eb" },
-    { name: "Relax", color: "#7c3aed" },
-    { name: "Arrumação", color: "#d97706" },
-    { name: "Comer", color: "#dc2626" },
-    { name: "Saúde", color: "#059669" },
-    { name: "Planejamento", color: "#475569" },
+    { name: "TEMPO PERDIDO", color: "#9333ea" },
+    { name: "WORK", color: "#2563eb" },
+    { name: "ROTINA QUARTO", color: "#db2777" },
   ];
 
   const { data: currentCategories, error: categoryError } = await supabase
@@ -245,14 +296,31 @@ export async function restoreInitialCatalog() {
   if (allCategoriesError) throw new Error("Não foi possível carregar as categorias restauradas.");
 
   const categoryIds = new Map((allCategories ?? []).map((category) => [category.name.toLocaleLowerCase("pt-BR"), category.id]));
-  const defaultClassifications = [
-    ["TASK", "TASK"],
-    ["Relax", "Relax or Games"],
-    ["Arrumação", "Arrumação Quarto"],
-    ["Comer", "Jantar"],
-    ["Saúde", "Academia"],
-    ["Planejamento", "Next Day"],
-    ["Planejamento", "Sair Casa"],
+  const defaultClassifications: Array<[string | null, string]> = [
+    ["TEMPO PERDIDO", "Klap"],
+    ["TEMPO PERDIDO", "SemiKlap"],
+    ["TEMPO PERDIDO", "Relax or Games"],
+    ["TEMPO PERDIDO", "Brawl"],
+    ["WORK", "TASK"],
+    ["WORK", "Book"],
+    ["WORK", "Corrrer"],
+    ["WORK", "Academia"],
+    ["WORK", "Arrumação PC"],
+    [null, "Mercado"],
+    [null, "Arrumação Quarto"],
+    [null, "Fazer Jantar"],
+    [null, "Finalizar Dia"],
+    [null, "Higiene"],
+    [null, "Arrumar pra sair"],
+    [null, "Next Day"],
+    [null, "Jantar"],
+    [null, "Almoçar"],
+    [null, "Fazer Almoço"],
+    [null, "Sair Casa"],
+    [null, "Notes PC or Diary"],
+    [null, "Obsidian Notes"],
+    [null, "Conversa Vilma"],
+    [null, "Tomar Café"],
   ];
 
   const { data: currentClassifications, error: classificationsError } = await supabase
@@ -264,15 +332,15 @@ export async function restoreInitialCatalog() {
   const missingClassifications = defaultClassifications
     .filter(([, name]) => !existingClassificationNames.has(name.toLocaleLowerCase("pt-BR")))
     .map(([categoryName, name]) => ({
-      category_id: categoryIds.get(categoryName.toLocaleLowerCase("pt-BR")),
+      category_id: categoryName ? categoryIds.get(categoryName.toLocaleLowerCase("pt-BR")) : null,
       name,
     }));
 
-  if (missingClassifications.some((classification) => !classification.category_id)) {
+  if (missingClassifications.some((classification) => classification.category_id === undefined)) {
     throw new Error("Não foi possível encontrar uma categoria necessária para o catálogo inicial.");
   }
   if (missingClassifications.length) {
-    const { error } = await supabase.from("classifications").insert(missingClassifications as { category_id: string; name: string }[]);
+    const { error } = await supabase.from("classifications").insert(missingClassifications as { category_id: string | null; name: string }[]);
     if (error) throw new Error("Não foi possível restaurar as classificações iniciais.");
   }
 
@@ -297,19 +365,82 @@ export async function restoreInitialCatalogWithFeedback(
 export async function createTask(formData: FormData) {
   const userId = await requireUser();
   const title = requiredText(formData, "title");
-  const categoryId = optionalCategoryId(formData);
   const isDaily = formData.get("isDaily")?.toString() === "true";
-  if (categoryId) await ensureAvailableCategory(categoryId);
+  const taskListId = isDaily ? null : optionalTaskListId(formData);
+  if (taskListId) await ensureAvailableTaskList(taskListId, userId);
 
   const supabase = await createClient();
   const { error } = await supabase.from("tasks").insert({
     user_id: userId,
     title,
-    category_id: categoryId,
     is_daily: isDaily,
+    task_list_id: taskListId,
   });
 
   if (error) throw new Error("Não foi possível criar a tarefa.");
+  revalidateTasks();
+}
+
+export async function createTaskList(formData: FormData) {
+  const userId = await requireUser();
+  const name = requiredText(formData, "name");
+  const description = formData.get("description")?.toString().trim() ?? "";
+  if (description.length > 300) throw new Error("A descrição deve ter no máximo 300 caracteres.");
+  const supabase = await createClient();
+  const { data: lastList, error: orderError } = await supabase
+    .from("task_lists")
+    .select("sort_order")
+    .eq("user_id", userId)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (orderError) throw new Error("Não foi possível determinar a ordem da nova aba.");
+  const { error } = await supabase.from("task_lists").insert({ user_id: userId, name, description, sort_order: (lastList?.sort_order ?? -1) + 1 });
+
+  if (error?.code === "23505") throw new Error("Já existe uma aba com esse nome.");
+  if (error) throw new Error("Não foi possível criar a aba.");
+  revalidateTasks();
+}
+
+export async function reorderTaskList(formData: FormData) {
+  const userId = await requireUser();
+  const taskListId = requiredText(formData, "taskListId");
+  const direction = requiredText(formData, "direction");
+  if (direction !== "up" && direction !== "down") throw new Error("Direção inválida.");
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("task_lists")
+    .select("id")
+    .eq("user_id", userId)
+    .order("sort_order")
+    .order("created_at");
+  if (error) throw new Error("Não foi possível carregar a ordem das abas.");
+
+  const orderedIds = (data ?? []).map((list) => list.id);
+  const currentIndex = orderedIds.indexOf(taskListId);
+  const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+  if (currentIndex < 0 || targetIndex < 0 || targetIndex >= orderedIds.length) return;
+  [orderedIds[currentIndex], orderedIds[targetIndex]] = [orderedIds[targetIndex], orderedIds[currentIndex]];
+
+  const updates = await Promise.all(orderedIds.map((id, sortOrder) => supabase.from("task_lists").update({ sort_order: sortOrder }).eq("id", id).eq("user_id", userId)));
+  if (updates.some((result) => result.error)) throw new Error("Não foi possível alterar a ordem das abas.");
+  revalidateTasks();
+}
+
+export async function setTaskImportance(formData: FormData) {
+  const userId = await requireUser();
+  const taskId = requiredText(formData, "taskId");
+  const important = formData.get("important")?.toString() === "true";
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("tasks")
+    .update({ is_important: important })
+    .eq("id", taskId)
+    .eq("user_id", userId)
+    .eq("is_daily", false);
+
+  if (error) throw new Error("Não foi possível alterar a importância da tarefa.");
   revalidateTasks();
 }
 
@@ -333,7 +464,7 @@ export async function setDailyTaskCompletion(formData: FormData) {
   const userId = await requireUser();
   const taskId = requiredText(formData, "taskId");
   const complete = formData.get("complete")?.toString() === "true";
-  const completedOn = saoPauloDate();
+  const completedOn = completionDate(formData);
   const supabase = await createClient();
 
   const { data: task, error: taskError } = await supabase

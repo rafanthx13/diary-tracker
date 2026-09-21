@@ -1,14 +1,9 @@
-export type CategoryOption = {
-  id: string;
-  name: string;
-  color: string;
-};
-
 export type Task = {
   id: string;
   title: string;
-  category_id: string | null;
   is_daily: boolean;
+  task_list_id: string | null;
+  is_important: boolean;
   completed_at: string | null;
   created_at: string;
 };

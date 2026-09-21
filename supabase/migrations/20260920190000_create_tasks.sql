@@ -4,7 +4,6 @@ create table public.tasks (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   title text not null check (char_length(trim(title)) between 1 and 240),
-  category_id uuid references public.categories(id) on delete set null,
   is_daily boolean not null default false,
   completed_at timestamptz,
   created_at timestamptz not null default now(),

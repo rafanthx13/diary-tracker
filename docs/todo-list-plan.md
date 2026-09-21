@@ -10,9 +10,10 @@ Ela não terá ligação com atividades, horários, duração ou classificaçõe
 
 | Página | Finalidade |
 | --- | --- |
-| **TODO List** | Lista geral de tarefas pendentes e concluídas. |
-| **Rotina diária** | Lista exclusiva de tarefas que se repetem todos os dias. |
-| **Concluídas no mês** | Consulta de tarefas gerais concluídas em um mês. |
+| **TODO List** | Tarefas gerais em cards; abre em TODAS e permite filtrar por Pendente ou abas personalizadas. |
+| **Diary Task** | Lista exclusiva de tarefas que se repetem todos os dias, em `/diary-task`. |
+| **Relatório do Diary Task** | Frequência e dias concluídos por tarefa, em dia, semana, mês, ano ou acumulado. |
+| **Relatório da TODO List** | Consulta em `/tasks/reports` das tarefas gerais concluídas em cada mês. |
 
 TODO List e Rotina diária são páginas separadas. Uma tarefa diária não aparece na TODO List geral.
 
@@ -25,7 +26,7 @@ Uma tarefa geral terá somente as informações abaixo:
 | Informação | Obrigatória | Observação |
 | --- | --- | --- |
 | Título | Sim | Nome da tarefa. |
-| Categoria | Não | Categoria global opcional para organização. |
+| Aba | Não | A lista Pendente é o padrão; abas personalizadas organizam tarefas gerais. |
 | Estado | Sim | Pendente ou concluída. |
 | Criada em | Automática | Data e hora registradas pelo sistema. |
 | Concluída em | Automática | Data e hora registradas ao marcar como concluída. |
@@ -34,7 +35,11 @@ O estado será pendente enquanto `completed_at` estiver vazio e concluído quand
 
 ### Comportamento
 
-- O formulário de criação terá apenas título e categoria opcional.
+- O formulário de criação terá apenas o título.
+- A tarefa entra na aba selecionada; sem aba selecionada, entra em **Pendente**.
+- É possível criar abas personalizadas, como Projetos ou Estudos. Elas não são categorias de tempo.
+- A primeira aba é **TODAS** e reúne as tarefas pendentes de todas as abas.
+- A visão TODAS não cria tarefas; é preciso abrir Pendente ou uma aba personalizada antes de adicionar.
 - Toda tarefa nova começa pendente.
 - O checkbox altera a tarefa entre pendente e concluída.
 - Ao concluir, o sistema salva a data e a hora em `completed_at`.
@@ -48,23 +53,22 @@ O estado será pendente enquanto `completed_at` estiver vazio e concluído quand
 
 - Botão **Nova tarefa** sempre visível.
 - Campo de título direto, para registrar uma tarefa em poucos segundos no celular.
-- Seletor de categoria opcional.
 - Checkbox grande e confortável para toque.
-- Lista limpa: pendentes primeiro, concluídas depois.
+- Cards em grade, lado a lado no notebook e empilhados no celular.
+- Abas rápidas para TODAS, Pendente e abas personalizadas, além do relatório mensal.
 - Estados vazios claros quando não houver tarefas.
 
-## Rotina diária — página separada
+## Diary Task — página separada
 
 ### Objetivo
 
-Mostrar apenas tarefas recorrentes que precisam ser feitas todos os dias. Essa página é separada da TODO List geral para manter o uso simples.
+Mostrar apenas tarefas recorrentes que precisam ser feitas todos os dias. Essa página fica em `/diary-task`, é separada da TODO List geral e permite navegar por datas anteriores.
 
 ### Informações de uma tarefa diária
 
 | Informação | Obrigatória | Observação |
 | --- | --- | --- |
 | Título | Sim | Nome da rotina. |
-| Categoria | Não | Categoria global opcional. |
 | Criada em | Automática | Data e hora de criação da rotina. |
 | Conclusão do dia | Automática | Registro separado para cada data. |
 
@@ -77,13 +81,15 @@ Mostrar apenas tarefas recorrentes que precisam ser feitas todos os dias. Essa p
 - Desmarcar remove somente a conclusão do dia atual.
 - No dia seguinte, a mesma tarefa reaparece pendente automaticamente.
 - A página exibe o progresso do dia: concluídas de um total de tarefas diárias.
+- É possível consultar um dia anterior e marcar ou desmarcar a conclusão daquela data; datas futuras não podem ser marcadas.
+- O relatório do Diary Task lista quantas vezes cada tarefa foi feita e os dias registrados para dia, semana, mês, ano e acumulado.
 
-## Concluídas no mês
+## Relatório da TODO List
 
-Página de consulta das tarefas gerais concluídas.
+Página `/tasks/reports` de consulta das tarefas gerais concluídas.
 
 - Lista tarefas da TODO List geral cujo `completed_at` pertence ao mês selecionado.
-- Mostra título, categoria, data de criação e data de conclusão.
+- Mostra título, data de criação e data de conclusão.
 - Permite trocar o mês visualizado.
 - Tarefas diárias não aparecem nessa tela; elas terão histórico próprio no futuro.
 
@@ -96,7 +102,7 @@ Página de consulta das tarefas gerais concluídas.
 | `id` | UUID | Identificador estável. |
 | `user_id` | UUID | Dono da tarefa e proteção dos dados pessoais. |
 | `title` | Texto | Nome da tarefa. |
-| `category_id` | UUID opcional | Referência à categoria global. |
+| `task_list_id` | UUID opcional | Aba personalizada da tarefa geral. |
 | `is_daily` | Booleano | Define se a tarefa pertence à Rotina diária. |
 | `created_at` | Data/hora | Criação automática. |
 | `completed_at` | Data/hora opcional | Conclusão da tarefa geral. Não é usado por tarefas diárias. |
@@ -105,8 +111,18 @@ Página de consulta das tarefas gerais concluídas.
 Regras:
 
 - `is_daily = false`: pertence à TODO List geral; `completed_at` representa pendente/concluída.
-- `is_daily = true`: pertence à Rotina diária; o estado de cada dia fica em `daily_task_completions`.
-- `title`, categoria e estado são os únicos dados funcionais da tarefa geral.
+- `is_daily = true`: pertence ao Diary Task; o estado de cada dia fica em `daily_task_completions`.
+- `title` e estado são os únicos dados funcionais da tarefa geral.
+- `task_list_id` é apenas a organização visual da TODO List; tarefas diárias sempre ficam sem aba.
+
+### Tabela `task_lists`
+
+| Coluna | Tipo | Finalidade |
+| --- | --- | --- |
+| `id` | UUID | Identificador estável da aba. |
+| `user_id` | UUID | Dono da aba. |
+| `name` | Texto | Nome exibido na TODO List. |
+| `created_at` | Data/hora | Criação automática. |
 
 ### Tabela `daily_task_completions`
 
@@ -124,7 +140,8 @@ Uma restrição única em `(task_id, completed_on)` impede duas conclusões para
 
 - Tarefas e conclusões diárias possuem `user_id` porque são dados privados.
 - RLS permite que a conta autenticada leia e altere apenas as próprias tarefas.
-- Categorias continuam globais, conforme a decisão de aplicativo para uma única pessoa.
+- Abas personalizadas também são privadas e protegidas por RLS.
+- Categorias e classificações pertencem exclusivamente ao registro de tempo; tarefas não as usam.
 - Cada Server Action exige autenticação antes de criar, concluir ou reabrir tarefas.
 
 ## Fluxos principais
@@ -134,26 +151,25 @@ Uma restrição única em `(task_id, completed_on)` impede duas conclusões para
 1. Abrir **TODO List**.
 2. Tocar em **Nova tarefa**.
 3. Digitar o título.
-4. Escolher uma categoria, se desejar.
-5. Salvar; a tarefa entra como pendente.
+4. Salvar; a tarefa entra na aba atual ou em Pendente.
 
 ### Concluir uma tarefa geral
 
 1. Abrir **TODO List**.
 2. Tocar no checkbox da tarefa.
 3. O sistema salva `completed_at`.
-4. A tarefa vai para o fim da lista e aparece em Concluídas no mês.
+4. A tarefa sai das pendências e aparece no relatório do mês em que foi concluída.
 
-### Criar uma tarefa diária
+### Criar uma tarefa do Diary Task
 
-1. Abrir **Rotina diária**.
+1. Abrir **Diary Task**.
 2. Tocar em **Adicionar tarefa diária**.
-3. Informar título e, opcionalmente, categoria.
+3. Informar o título.
 4. Salvar; ela aparece pendente hoje e nos próximos dias.
 
-### Concluir uma tarefa diária
+### Concluir uma tarefa do Diary Task
 
-1. Abrir **Rotina diária**.
+1. Abrir **Diary Task**.
 2. Tocar no checkbox.
 3. O sistema registra a conclusão para a data atual.
 4. A tarefa é movida para o fim da lista.
@@ -169,20 +185,20 @@ Uma restrição única em `(task_id, completed_on)` impede duas conclusões para
 ### Etapa 2 — TODO List
 
 1. Criar rota `/tasks`.
-2. Criar formulário com título e categoria opcional.
-3. Exibir pendentes e concluídas.
+2. Criar abas personalizadas e vincular tarefas gerais a elas.
+3. Exibir tarefas em cards lado a lado.
 4. Implementar concluir e reabrir.
 
-### Etapa 3 — Rotina diária
+### Etapa 3 — Diary Task
 
-1. Criar rota `/routine`.
+1. Criar rota `/diary-task` com navegação por data.
 2. Criar formulário específico de rotina diária.
 3. Implementar conclusão por data no fuso `America/Sao_Paulo`.
-4. Reordenar visualmente concluídas e mostrar progresso do dia.
+4. Reordenar visualmente concluídas, mostrar progresso do dia e criar relatório de frequência.
 
 ### Etapa 4 — consulta e acabamento
 
-1. Criar rota `/tasks/completed` com filtro mensal.
+1. Criar rota `/tasks/reports` com filtro mensal.
 2. Criar detalhes da tarefa para mostrar criação e conclusão.
 3. Ajustar estados vazios, feedback de sucesso/erro e navegação em celular.
 4. Testar no celular e notebook.
@@ -195,11 +211,11 @@ Uma restrição única em `(task_id, completed_on)` impede duas conclusões para
 - Lembretes e notificações.
 - Arrastar para reordenar.
 - Exclusão definitiva.
-- Histórico detalhado da rotina diária.
+- Histórico detalhado adicional do Diary Task.
 
 ## Premissas para avaliação
 
-- TODO List geral contém tarefas simples: título, categoria opcional e estado pendente/concluído.
+- TODO List geral contém tarefas simples em cards: título, aba opcional e estado pendente/concluído.
 - Datas de criação e conclusão são sempre registradas, mas não ficam visíveis na lista principal.
-- Rotina diária é uma página separada e possui conclusão por dia.
+- Diary Task é uma página separada, possui conclusão por dia e relatório de frequência.
 - A aplicação continua usando `America/Sao_Paulo` como fuso de referência.

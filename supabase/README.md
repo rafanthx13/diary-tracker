@@ -13,7 +13,7 @@ O Diary Tracker foi modelado para uma única conta. Por isso, **categorias e cla
 
 ### Se aparecer o erro `42501`
 
-Se a aplicação mostrar `permission denied for table classifications`, execute também `migrations/20260920170000_grant_authenticated_access.sql` no **SQL Editor**. Essa correção concede acesso ao papel autenticado sem remover o RLS.
+Se a aplicação mostrar `permission denied`, execute a migração mais recente de permissões no **SQL Editor**: `migrations/20260921010000_fix_activity_permissions.sql`. Ela permite registrar atividades para usuários autenticados e mantém o RLS, que limita cada atividade à própria conta.
 
 ### Aplicar a mudança de catálogo único em um projeto já criado
 
@@ -22,6 +22,26 @@ Execute `migrations/20260920180000_make_catalog_global.sql` no **SQL Editor**. E
 ### Ativar a TODO List
 
 Execute `migrations/20260920190000_create_tasks.sql` no **SQL Editor**. Ela cria as tabelas de tarefas gerais e conclusões diárias, junto com as regras de segurança necessárias.
+
+### Atualizar o catálogo de tempo
+
+Execute `migrations/20260921000000_time_catalog_only.sql` depois das migrações anteriores. Ela prepara as categorias de tempo **TEMPO PERDIDO** e **WORK**, preenche a lista de classificações informada e remove categorias das tarefas.
+
+### Corrigir permissões de atividades
+
+Execute `migrations/20260921010000_fix_activity_permissions.sql` depois das demais migrações. Ela recria as permissões e políticas da tabela `activities` para que a conta autenticada possa criar, ler, editar e encerrar somente as próprias atividades.
+
+### Ativar abas da TODO List
+
+Execute `migrations/20260921020000_add_task_lists.sql` depois das demais migrações. Ela adiciona abas personalizadas para organizar tarefas gerais, sem ligação com o registro de tempo ou a rotina diária.
+
+### Adicionar a categoria ROTINA QUARTO
+
+Em instalações novas, execute `migrations/20260921030000_add_room_routine_category.sql`. Se você já executou a versão anterior dessa migração, execute `migrations/20260921040000_normalize_time_categories.sql` para corrigir o catálogo. Depois disso, use `/today/categories` para mover classificações existentes para **ROTINA QUARTO**.
+
+### Ordenar abas e destacar tarefas importantes
+
+Execute `migrations/20260921050000_task_priorities.sql`. Ela adiciona descrição e ordem manual às abas da TODO List e permite marcar tarefas gerais como importantes.
 
 ## 2. Configurar o ambiente local
 
