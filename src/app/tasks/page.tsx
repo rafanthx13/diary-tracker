@@ -50,14 +50,14 @@ export default async function TasksPage({ searchParams }: Props) {
       <div className="mx-auto max-w-6xl space-y-6 px-5 py-6 sm:px-8">
         <section className="rounded-3xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5">
           <nav aria-label="Abas da TODO List" className="flex flex-wrap items-center gap-2">
-            <Link href="/tasks" className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition ${selectedView === "all" ? "bg-emerald-700 text-white" : "bg-stone-100 hover:bg-stone-200"}`}><span aria-hidden="true">✦</span>TODAS</Link>
+            <Link href="/tasks" className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition ${selectedView === "all" ? "bg-emerald-700 text-white" : "bg-stone-100 hover:bg-stone-200"}`}><ToolbarIcon name="all" />TODAS</Link>
             <Link href="/tasks?list=pending" className={`rounded-xl px-4 py-2.5 text-sm font-medium transition ${selectedView === "pending" ? "bg-emerald-700 text-white" : "bg-stone-100 hover:bg-stone-200"}`}>Pendente</Link>
             {lists.map((list) => <Link key={list.id} href={`/tasks?list=${list.id}`} className={`rounded-xl px-4 py-2.5 text-sm font-medium transition ${activeList?.id === list.id ? "bg-emerald-700 text-white" : "bg-stone-100 hover:bg-stone-200"}`}>{list.name}</Link>)}
           </nav>
 
           <div className="mt-4 grid gap-3 border-t border-stone-100 pt-4 lg:grid-cols-3">
             <details className="group rounded-2xl bg-stone-50 p-4">
-              <summary className="cursor-pointer text-sm font-semibold text-emerald-800">＋ Criar nova aba</summary>
+              <summary className="flex cursor-pointer list-none items-center gap-3 text-sm font-semibold text-emerald-800 [&::-webkit-details-marker]:hidden"><span className="grid size-9 place-items-center rounded-xl bg-emerald-100 text-emerald-800 group-hover:bg-emerald-200"><ToolbarIcon name="add-list" /></span>Criar nova aba<ToolbarIcon name="chevron" className="ml-auto transition-transform group-open:rotate-180" /></summary>
               <form action={createTaskList} className="mt-4 space-y-3">
                 <label className="block text-sm font-medium">Nome da aba<input name="name" required maxLength={80} placeholder="Ex.: Estudos" className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label>
                 <label className="block text-sm font-medium">Descrição<textarea name="description" maxLength={300} rows={2} placeholder="Ex.: Cursos, leituras e exercícios que quero estudar." className="mt-2 w-full resize-none rounded-xl border border-stone-300 bg-white px-3 py-2.5 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label>
@@ -65,10 +65,10 @@ export default async function TasksPage({ searchParams }: Props) {
               </form>
             </details>
 
-            {lists.length > 1 && <details className="group rounded-2xl bg-stone-50 p-4"><summary className="cursor-pointer text-sm font-semibold text-emerald-800">↕ Ordenar abas</summary><p className="mt-2 text-xs leading-5 text-stone-500">A ordem definida aqui também é usada nas seções da aba TODAS.</p><div className="mt-3 space-y-2">{lists.map((list, index) => <div key={list.id} className="flex items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white px-3 py-2"><span className="truncate text-sm font-medium"><span className="mr-2 text-stone-400">{index + 1}.</span>{list.name}</span><div className="flex gap-1"><OrderButton listId={list.id} direction="up" disabled={index === 0} label={`Subir ${list.name}`} symbol="↑" /><OrderButton listId={list.id} direction="down" disabled={index === lists.length - 1} label={`Descer ${list.name}`} symbol="↓" /></div></div>)}</div></details>}
+            {lists.length > 1 && <details className="group rounded-2xl bg-stone-50 p-4"><summary className="flex cursor-pointer list-none items-center gap-3 text-sm font-semibold text-emerald-800 [&::-webkit-details-marker]:hidden"><span className="grid size-9 place-items-center rounded-xl bg-emerald-100 text-emerald-800 group-hover:bg-emerald-200"><ToolbarIcon name="sort" /></span>Ordenar abas<ToolbarIcon name="chevron" className="ml-auto transition-transform group-open:rotate-180" /></summary><p className="mt-4 text-xs leading-5 text-stone-500">A ordem definida aqui também é usada nas seções da aba TODAS.</p><div className="mt-3 space-y-2">{lists.map((list, index) => <div key={list.id} className="flex items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white px-3 py-2"><span className="truncate text-sm font-medium"><span className="mr-2 text-stone-400">{index + 1}.</span>{list.name}</span><div className="flex gap-1"><OrderButton listId={list.id} direction="up" disabled={index === 0} label={`Subir ${list.name}`} /><OrderButton listId={list.id} direction="down" disabled={index === lists.length - 1} label={`Descer ${list.name}`} /></div></div>)}</div></details>}
 
             <details className="group rounded-2xl bg-stone-50 p-4">
-              <summary className="cursor-pointer text-sm font-semibold text-emerald-800">ⓘ Informações e nova tarefa</summary>
+              <summary className="flex cursor-pointer list-none items-center gap-3 text-sm font-semibold text-emerald-800 [&::-webkit-details-marker]:hidden"><span className="grid size-9 place-items-center rounded-xl bg-emerald-100 text-emerald-800 group-hover:bg-emerald-200"><ToolbarIcon name="info" /></span>Informações e nova tarefa<ToolbarIcon name="chevron" className="ml-auto transition-transform group-open:rotate-180" /></summary>
               <div className="mt-4"><h2 className="text-lg font-semibold">{selectedView === "all" ? "Todas as tarefas" : activeList?.name ?? "Pendente"}</h2>{selectedView === "custom" && activeList?.description && <p className="mt-2 text-sm leading-6 text-stone-600">{activeList.description}</p>}{canCreateTask ? <form action={createTask} className="mt-4 space-y-3"><input type="hidden" name="isDaily" value="false" /><input type="hidden" name="taskListId" value={activeList?.id ?? ""} /><label className="block text-sm font-medium">Nova tarefa<input name="title" required maxLength={240} placeholder="O que precisa fazer?" className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><button className="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-800">Adicionar</button></form> : <p className="mt-2 text-sm leading-6 text-stone-600">Abra uma aba específica para criar uma tarefa nela.</p>}</div>
             </details>
           </div>
@@ -81,11 +81,26 @@ export default async function TasksPage({ searchParams }: Props) {
 }
 
 function Header() {
-  return <header className="border-b border-stone-200 bg-white"><div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-5 sm:px-8"><div><p className="text-sm font-semibold tracking-[0.16em] text-emerald-700 uppercase">Diary Tracker</p><h1 className="mt-1 text-2xl font-semibold">TODO List</h1></div><Link href="/tasks/reports" className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 shadow-sm hover:bg-stone-50"><span aria-hidden="true">▥</span>Relatório</Link></div></header>;
+  return <header className="border-b border-stone-200 bg-white"><div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-5 sm:px-8"><div><p className="text-sm font-semibold tracking-[0.16em] text-emerald-700 uppercase">Diary Tracker</p><h1 className="mt-1 text-2xl font-semibold">TODO List</h1></div><Link href="/tasks/reports" className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800"><span className="grid size-7 place-items-center rounded-lg bg-emerald-100 text-emerald-800"><ToolbarIcon name="report" /></span>Relatório</Link></div></header>;
 }
 
-function OrderButton({ listId, direction, disabled, label, symbol }: { listId: string; direction: "up" | "down"; disabled: boolean; label: string; symbol: string }) {
-  return <form action={reorderTaskList}><input type="hidden" name="taskListId" value={listId} /><input type="hidden" name="direction" value={direction} /><button disabled={disabled} aria-label={label} title={label} className="grid size-8 place-items-center rounded-lg bg-stone-100 font-semibold hover:bg-stone-200 disabled:cursor-not-allowed disabled:opacity-30">{symbol}</button></form>;
+function ToolbarIcon({ name, className = "" }: { name: "add-list" | "all" | "chevron" | "info" | "report" | "sort" | "up" | "down"; className?: string }) {
+  const paths = {
+    "add-list": <><path d="M4 6h10M4 12h7M4 18h7M18 10v8m-4-4h8" /></>,
+    all: <><rect x="4" y="4" width="6" height="6" rx="1" /><rect x="14" y="4" width="6" height="6" rx="1" /><rect x="4" y="14" width="6" height="6" rx="1" /><rect x="14" y="14" width="6" height="6" rx="1" /></>,
+    chevron: <path d="m7 10 5 5 5-5" />,
+    info: <><circle cx="12" cy="12" r="8" /><path d="M12 11v5m0-8h.01" /></>,
+    report: <><path d="M5 19V5m0 14h14" /><path d="m8 15 3-3 3 2 4-5" /></>,
+    sort: <><path d="M8 4v16m0 0-3-3m3 3 3-3M16 20V4m0 0-3 3m3-3 3 3" /></>,
+    up: <path d="m7 14 5-5 5 5" />,
+    down: <path d="m7 10 5 5 5-5" />,
+  } satisfies Record<string, React.ReactNode>;
+
+  return <svg aria-hidden="true" viewBox="0 0 24 24" className={`size-4 fill-none stroke-current stroke-2 ${className}`}>{paths[name]}</svg>;
+}
+
+function OrderButton({ listId, direction, disabled, label }: { listId: string; direction: "up" | "down"; disabled: boolean; label: string }) {
+  return <form action={reorderTaskList}><input type="hidden" name="taskListId" value={listId} /><input type="hidden" name="direction" value={direction} /><button disabled={disabled} aria-label={label} title={label} className="grid size-8 place-items-center rounded-lg border border-stone-200 bg-white text-stone-600 transition hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-800 disabled:cursor-not-allowed disabled:opacity-30"><ToolbarIcon name={direction} /></button></form>;
 }
 
 function TaskGroup({ section }: { section: TaskSection }) {
