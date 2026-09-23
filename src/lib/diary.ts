@@ -13,8 +13,22 @@ export type Activity = {
   title: string;
   started_at: string;
   ended_at: string | null;
+  diary_date: string;
   classification: Classification | null;
 };
+
+export function currentDiaryDate(now = new Date()) {
+  const diaryDay = new Date(now.getTime() - 5 * 60 * 60 * 1000);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(diaryDay);
+  const getPart = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+
+  return `${getPart("year")}-${getPart("month")}-${getPart("day")}`;
+}
 
 export function formatTime(value: string) {
   return new Intl.DateTimeFormat("pt-BR", {

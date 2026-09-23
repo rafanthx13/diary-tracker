@@ -1,7 +1,7 @@
 import { startActivity, stopActivity } from "@/app/actions";
 import { RestoreCatalogButton } from "@/app/categories/restore-catalog-button";
 import { requireUser } from "@/lib/auth";
-import { type Activity, type Classification, formatDuration, formatTime, toDateTimeLocal } from "@/lib/diary";
+import { currentDiaryDate, type Activity, type Classification, formatDuration, formatTime, toDateTimeLocal } from "@/lib/diary";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
@@ -13,18 +13,6 @@ export const dynamic = "force-dynamic";
 type PageProps = {
   searchParams: Promise<{ date?: string | string[] }>;
 };
-
-function getTodayInSaoPaulo() {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date());
-  const part = (type: string) => parts.find((value) => value.type === type)?.value ?? "";
-
-  return `${part("year")}-${part("month")}-${part("day")}`;
-}
 
 function isValidIsoDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -55,7 +43,7 @@ function formatTotalMinutes(minutes: number) {
 export default async function TodayPage({ searchParams }: PageProps) {
   if (!hasSupabaseEnv()) redirect("/");
   const userId = await requireUser();
-  const today = getTodayInSaoPaulo();
+  const today = currentDiaryDate();
   const requestedDate = (await searchParams).date;
   const dateParameter = Array.isArray(requestedDate) ? requestedDate[0] : requestedDate;
   const selectedDate = dateParameter && isValidIsoDate(dateParameter) && dateParameter <= today ? dateParameter : today;
@@ -63,7 +51,7 @@ export default async function TodayPage({ searchParams }: PageProps) {
   const previousDate = shiftDate(selectedDate, -1);
   const nextDate = shiftDate(selectedDate, 1);
   const supabase = await createClient();
-  const activitySelect = "id, title, started_at, ended_at, classification:classifications(id, name, category:categories(id, name, color))";
+  const activitySelect = "id, title, started_at, ended_at, diary_date, classification:classifications(id, name, category:categories(id, name, color))";
   const [
     { data: classificationsData, error: classificationsError },
     { data: categoriesData, error: categoriesError },
@@ -72,7 +60,7 @@ export default async function TodayPage({ searchParams }: PageProps) {
   ] = await Promise.all([
     supabase.from("classifications").select("id, name, category_id").order("name"),
     supabase.from("categories").select("id, name, color").order("name"),
-    supabase.from("activities").select(activitySelect).eq("user_id", userId).eq("tracking_date", selectedDate).order("started_at", { ascending: false }),
+    supabase.from("activities").select(activitySelect).eq("user_id", userId).eq("diary_date", selectedDate).order("started_at", { ascending: false }),
     supabase.from("activities").select(activitySelect).eq("user_id", userId).is("ended_at", null).maybeSingle(),
   ]);
 
@@ -146,7 +134,7 @@ export default async function TodayPage({ searchParams }: PageProps) {
           {!isToday ? (
             <div><p className="text-sm font-medium text-emerald-100">Registro histórico</p><h2 className="mt-1 text-lg font-semibold">{formatDate(selectedDate)}</h2><p className="mt-2 text-sm leading-5 text-emerald-50">Use o botão abaixo para registrar um período neste dia.</p></div>
           ) : runningActivity ? (
-            <div><p className="text-xs font-medium text-emerald-100">Em andamento desde {formatTime(runningActivity.started_at)}</p><h2 className="mt-1 truncate text-xl font-semibold" title={runningActivity.title}>{runningActivity.title}</h2><p className="mt-1 text-sm text-emerald-100">{runningActivity.classification?.name ?? "Sem classificação"} · {formatDuration(runningActivity.started_at, null)}</p><form action={stopActivity} className="mt-4"><input type="hidden" name="activityId" value={runningActivity.id} /><button className="w-full rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-emerald-900 hover:bg-emerald-50">Encerrar agora</button></form></div>
+            <div><p className="text-xs font-medium text-emerald-100">Em andamento desde {formatTime(runningActivity.started_at)}</p><h2 className="mt-1 truncate text-xl font-semibold" title={runningActivity.title}>{runningActivity.title}</h2><p className="mt-1 text-sm text-emerald-100">{runningActivity.classification?.name ?? "Sem classificação"} · {formatDuration(runningActivity.started_at, null)}</p>{runningActivity.diary_date !== today && <p className="mt-2 rounded-lg bg-emerald-900/40 px-2.5 py-2 text-xs leading-5 text-emerald-50">Esta atividade pertence ao registro de {formatDate(runningActivity.diary_date)}.</p>}<form action={stopActivity} className="mt-4"><input type="hidden" name="activityId" value={runningActivity.id} /><button className="w-full rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-emerald-900 hover:bg-emerald-50">Encerrar agora</button></form></div>
           ) : classifications.length ? (
             <div><p className="text-xs font-medium text-emerald-100">Registro rápido</p><h2 className="mt-1 text-lg font-semibold">O que você fará agora?</h2><form action={startActivity} className="mt-4 space-y-2.5"><input name="title" required placeholder="Ex.: Academia" className="w-full rounded-xl border border-white/30 bg-white px-3 py-2.5 text-sm text-stone-900 outline-none placeholder:text-stone-400 focus:ring-2 focus:ring-emerald-200" /><select name="classificationId" required defaultValue="" className="w-full rounded-xl border border-white/30 bg-white px-3 py-2.5 text-sm text-stone-900 outline-none focus:ring-2 focus:ring-emerald-200"><option value="" disabled>Escolha uma classificação</option>{classificationOptions.map((option) => <option key={option.id} value={option.id}>{option.name}{option.categoryName ? ` · ${option.categoryName}` : ""}</option>)}</select><button className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold hover:bg-emerald-400">Iniciar agora</button></form></div>
           ) : (

@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { saoPauloDate } from "@/lib/tasks";
+import { currentDiaryDate } from "@/lib/diary";
 import {
   createTimeReport,
   formatReportDate,
@@ -96,7 +96,7 @@ async function getActivities(userId: string, startDate?: string, endDate?: strin
 
   while (true) {
     let query = supabase.from("activities").select("id, title, started_at, ended_at, classification:classifications(id, name, category:categories(id, name))").eq("user_id", userId).not("ended_at", "is", null).order("started_at", { ascending: false });
-    if (startDate && endDate) query = query.gte("tracking_date", startDate).lt("tracking_date", endDate);
+    if (startDate && endDate) query = query.gte("diary_date", startDate).lt("diary_date", endDate);
     const { data, error } = await query.range(from, from + pageSize - 1);
     if (error) throw new Error("Não foi possível carregar os dados do relatório.");
     const page = (data ?? []) as unknown as ReportActivity[];
@@ -116,7 +116,7 @@ export default async function TimeReportPage({ params, searchParams }: Props) {
   if (!isTimeReportPeriod(rawPeriod)) notFound();
   const userId = await requireUser();
   const period = rawPeriod;
-  const range = reportRange(period, await searchParams, saoPauloDate());
+  const range = reportRange(period, await searchParams, currentDiaryDate());
   const report = createTimeReport(await getActivities(userId, range.startDate, range.endDate));
 
   return <main className="min-h-screen bg-stone-50 pb-12 text-stone-900"><header className="border-b border-stone-200 bg-white"><div className="mx-auto max-w-5xl px-5 py-5 sm:px-8"><p className="text-sm font-semibold tracking-[0.16em] text-emerald-700 uppercase">Diary Tracker</p><h1 className="mt-1 text-2xl font-semibold">Relatório de tempo: {periodLabels[period]}</h1></div></header><div className="mx-auto max-w-5xl space-y-6 px-5 py-6 sm:px-8"><div className="flex flex-wrap gap-2"><Link href="/today" className="rounded-xl bg-stone-100 px-3 py-2 text-sm font-medium hover:bg-stone-200">Voltar ao registro</Link><Link href="/today/categories" className="rounded-xl bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100">Categorias de tempo</Link></div><nav aria-label="Períodos do relatório" className="flex flex-wrap gap-2">{(Object.keys(periodLabels) as TimeReportPeriod[]).map((item) => <Link key={item} href={`/today/reports/${item}`} className={`rounded-xl px-3 py-2 text-sm font-medium ${item === period ? "bg-emerald-700 text-white" : "border border-stone-300 bg-white hover:bg-stone-100"}`}>{periodLabels[item]}</Link>)}</nav><section className="rounded-3xl bg-emerald-800 p-5 text-white sm:p-6"><p className="text-sm font-medium text-emerald-100">Período analisado</p><h2 className="mt-1 text-2xl font-semibold capitalize">{range.title}</h2><div className="mt-5 flex flex-wrap items-end justify-between gap-5"><div><p className="text-sm text-emerald-100">Tempo registrado</p><p className="mt-1 text-4xl font-semibold tabular-nums">{formatReportDuration(report.totalMinutes)}</p><p className="mt-2 text-sm text-emerald-100">{report.activityCount} atividade{report.activityCount === 1 ? " encerrada" : "s encerradas"}</p></div>{range.filter}</div></section><div className="grid gap-6 lg:grid-cols-3"><TotalsCard title="Por atividade" totals={report.byActivity} /><TotalsCard title="Por classificação" totals={report.byClassification} /><TotalsCard title="Por categoria" totals={report.byCategory} /></div></div></main>;

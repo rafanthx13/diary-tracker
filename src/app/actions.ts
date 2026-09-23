@@ -292,6 +292,7 @@ export async function restoreInitialCatalog() {
     { name: "TEMPO PERDIDO", color: "#9333ea" },
     { name: "WORK", color: "#2563eb" },
     { name: "ROTINA QUARTO", color: "#db2777" },
+    { name: "ROUTINE FOOD", color: "#ea580c" },
   ];
 
   const { data: currentCategories, error: categoryError } = await supabase

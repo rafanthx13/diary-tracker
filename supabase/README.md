@@ -39,6 +39,14 @@ Execute `migrations/20260921020000_add_task_lists.sql` depois das demais migraç
 
 Em instalações novas, execute `migrations/20260921030000_add_room_routine_category.sql`. Se você já executou a versão anterior dessa migração, execute `migrations/20260921040000_normalize_time_categories.sql` para corrigir o catálogo. Depois disso, use `/today/categories` para mover classificações existentes para **ROTINA QUARTO**.
 
+### Adicionar a categoria ROUTINE FOOD
+
+Execute `migrations/20260923000000_add_routine_food_category.sql`. Depois, use `/today/categories` para vincular as classificações de alimentação a **ROUTINE FOOD**.
+
+### Manter atividades da madrugada no dia anterior
+
+Execute `migrations/20260923010000_add_diary_date_cutoff.sql`. O dia do diário passa a virar às **05:00** no horário de São Paulo: atividades iniciadas entre 00:00 e 04:59 continuam no histórico e nos relatórios do dia anterior. Até esse horário, `/today` abre o diário do dia anterior e libera o registro rápido normalmente.
+
 ### Ordenar abas e destacar tarefas importantes
 
 Execute `migrations/20260921050000_task_priorities.sql`. Ela adiciona descrição e ordem manual às abas da TODO List e permite marcar tarefas gerais como importantes.
