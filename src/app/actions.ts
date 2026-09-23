@@ -206,6 +206,22 @@ export async function updateActivity(formData: FormData) {
   revalidatePath("/today/reports/[period]", "page");
 }
 
+export async function deleteActivity(formData: FormData) {
+  const userId = await requireUser();
+  const activityId = requiredText(formData, "activityId");
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("activities")
+    .delete()
+    .eq("id", activityId)
+    .eq("user_id", userId);
+
+  if (error) throw new Error("Não foi possível excluir a atividade.");
+
+  revalidatePath("/today");
+  revalidatePath("/today/reports/[period]", "page");
+}
+
 async function saveClassification(formData: FormData) {
   await requireUser();
   const name = requiredText(formData, "name");
@@ -441,6 +457,39 @@ export async function setTaskImportance(formData: FormData) {
     .eq("is_daily", false);
 
   if (error) throw new Error("Não foi possível alterar a importância da tarefa.");
+  revalidateTasks();
+}
+
+export async function updateTaskTitle(formData: FormData) {
+  const userId = await requireUser();
+  const taskId = requiredText(formData, "taskId");
+  const title = requiredText(formData, "title");
+  if (title.length > 240) throw new Error("O nome da tarefa deve ter no máximo 240 caracteres.");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("tasks")
+    .update({ title })
+    .eq("id", taskId)
+    .eq("user_id", userId)
+    .eq("is_daily", false);
+
+  if (error) throw new Error("Não foi possível alterar o nome da tarefa.");
+  revalidateTasks();
+}
+
+export async function deleteTask(formData: FormData) {
+  const userId = await requireUser();
+  const taskId = requiredText(formData, "taskId");
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("tasks")
+    .delete()
+    .eq("id", taskId)
+    .eq("user_id", userId)
+    .eq("is_daily", false);
+
+  if (error) throw new Error("Não foi possível excluir a tarefa.");
   revalidateTasks();
 }
 
