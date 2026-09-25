@@ -11,6 +11,9 @@ Este documento registra o estado observado no código e nas migrações do proje
 - Proteção de páginas e Server Actions por usuário autenticado.
 - Row Level Security nas tabelas privadas e migrações versionadas para o banco.
 - Tela de orientação quando as variáveis públicas do Supabase não estão configuradas.
+- Área privada de administração para manutenção da conta.
+- Monitoramento privado de erros por data, origem, código e gravidade, sem persistir mensagem, stack trace, payload ou outro dado pessoal.
+- Log de segurança privado para login bem-sucedido e operações de backup, com metadados de acesso e sem segredos ou conteúdo pessoal.
 
 ### Diário de atividades e tempo
 
@@ -65,6 +68,13 @@ Este documento registra o estado observado no código e nas migrações do proje
 - Notas com título e conteúdo Markdown.
 - Visualização formatada de títulos, listas, tabelas, links, citações e blocos de código em Markdown.
 - Edição de notas e listagem por atualização mais recente.
+
+### Backup e restauração
+
+- Download de backup JSON dos registros pessoais de atividades, tarefas, rotina diária, saúde, protocolos e anotações.
+- Arquivo de backup sem credenciais, sessões, `user_id` ou dados de outras contas.
+- Restauração transacional: um arquivo inválido ou incompatível não aplica alterações parciais.
+- Dois modos de restauração: mesclagem segura por padrão e substituição total mediante confirmação explícita.
 
 ## Ideias de novas funcionalidades
 

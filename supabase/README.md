@@ -63,6 +63,20 @@ Na tela **Dados de Saúde > Minhas medidas corporais > Importar**, baixe o model
 
 Execute `migrations/20260925000000_add_annotations.sql`. Ela cria protocolos, demandas ordenadas e anotações em Markdown, com RLS por usuário e funções transacionais para salvar a ordem das demandas.
 
+### Ativar backup, restauração e diagnóstico técnico
+
+Execute `migrations/20260925010000_add_observability_and_backup_restore.sql`. Ela cria o registro privado de erros técnicos e a função transacional usada para restaurar backups pessoais. Depois, a área **Administração** disponibiliza:
+
+- download de um JSON com os registros pessoais do banco;
+- restauração por mesclagem ou substituição integral confirmada;
+- painel de diagnóstico com data, origem, código e gravidade dos erros, sem mensagens ou dados pessoais.
+
+O backup depende das migrações e do catálogo de classificações de tempo já existentes no projeto. Guarde o arquivo JSON em local seguro: ele contém seus registros pessoais, embora não inclua senha, sessão ou chaves do Supabase.
+
+### Ativar o log de segurança de login e backup
+
+Execute `migrations/20260925020000_add_security_access_log.sql` após a migração anterior. Ela cria uma trilha privada para logins bem-sucedidos e ações de backup. O log registra data/hora, IP encaminhado, user-agent, idioma, plataforma, host e indicação de HTTPS; nunca registra senha, cookie, token, dados de formulário ou conteúdo do backup. Consulte os registros em **Administração > Log de segurança**.
+
 ## 2. Configurar o ambiente local
 
 1. Copie `.env.example` para `.env.local` na raiz do projeto.

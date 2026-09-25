@@ -2,6 +2,7 @@
 
 import { requireUser } from "@/lib/auth";
 import type { ClassificationFormState } from "@/lib/classification-form-state";
+import { recordSecurityAccessEvent } from "@/lib/security-access-log";
 import { saoPauloDate } from "@/lib/tasks";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
@@ -109,9 +110,10 @@ export async function signIn(formData: FormData) {
   const email = requiredText(formData, "email");
   const password = requiredText(formData, "password");
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) redirect("/login?erro=credenciais");
+  if (data.user) await recordSecurityAccessEvent(data.user.id, "login_success");
   redirect("/");
 }
 

@@ -81,6 +81,10 @@ docs/                              # documentação de produto e roadmap
 | `/annotations` | entrada de protocolos e anotações |
 | `/annotations/protocols` | protocolos com demandas ordenáveis |
 | `/annotations/notes` | notas livres em Markdown |
+| `/admin` | central privada de manutenção |
+| `/admin/data` | exportação e restauração de backup pessoal |
+| `/admin/diagnostics` | diagnóstico técnico sem conteúdo pessoal |
+| `/admin/security` | trilha privada de login e eventos de backup |
 
 Redirecionamentos legados estão em `next.config.ts`: `/categories` → `/today/categories`, `/reports/*` → `/today/reports/*` e `/tasks/completed` → `/tasks/reports`.
 
@@ -114,6 +118,15 @@ Redirecionamentos legados estão em `next.config.ts`: `/categories` → `/today/
 - Protocolos e suas demandas são privados por usuário. Criação e atualização usam as RPCs transacionais `create_protocol_with_demands` e `update_protocol_with_demands`.
 - A ordem das demandas é significativa; o formulário permite reorganização por arrastar ou pelo campo numérico.
 - Notas têm título e conteúdo Markdown. A exibição passa por `MarkdownContent`; ao ampliar o Markdown, considere segurança de links e conteúdo não confiável.
+
+### Administração, diagnóstico e backup
+
+- A área `/admin` exige autenticação e reúne manutenção pessoal. O monitoramento em `app_error_events` grava somente `occurred_at`, `source`, `code` e `severity`: nunca armazene mensagem de erro, stack trace, URL, payload ou conteúdo do usuário.
+- `src/app/error.tsx` e `src/app/global-error.tsx` são error boundaries do Next. Eles registram somente o digest/código técnico e exibem uma mensagem segura para a pessoa usuária. `src/instrumentation-client.ts` cobre erros e promessas rejeitadas no navegador com dois códigos fixos, encaminhados pela rota autenticada `/api/diagnostics/client-error`.
+- O download em `/api/backups/personal-data` cria JSON privado, sem `user_id`, credenciais ou dados de outras contas. Ele contém as linhas pessoais dos módulos de tempo, tarefas, saúde e anotações.
+- A importação aceita apenas o formato/versionamento em `src/lib/personal-backup.ts`, até 8 MB. A Server Action chama `restore_personal_backup` em uma única transação; a opção de substituição exige a confirmação `RESTAURAR`.
+- A restauração pressupõe que as migrações e o catálogo global de classificações já estejam presentes. Não use um backup como meio de alterar catálogo global nem copie dados entre contas.
+- `security_access_events` é uma trilha de segurança separada, criada para login bem-sucedido e operações de backup. Pode guardar IP encaminhado, user-agent, idioma, plataforma, host e HTTPS, mas nunca segredos, conteúdo ou URLs com parâmetros. Restrinja novos eventos a esse mesmo escopo até haver decisão explícita de ampliar a auditoria.
 
 ## Dados, autenticação e segurança
 

@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      // Importações de backup aceitam até 8 MB, mais a sobrecarga do multipart.
+      bodySizeLimit: "9mb",
+    },
+  },
   async redirects() {
     return [
       { source: "/categories", destination: "/today/categories", permanent: true },
