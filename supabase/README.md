@@ -59,6 +59,10 @@ Execute `migrations/20260921060000_health_data.sql`. Ela cria os registros diár
 
 Na tela **Dados de Saúde > Minhas medidas corporais > Importar**, baixe o modelo CSV. O formato usa uma linha por medida: `date;body_part;value;unit;instructions`. Datas podem estar em `DD/MM/AAAA` ou `AAAA-MM-DD`; uma linha cuja parte do corpo seja `Peso` alimenta o histórico de peso em kg. Salve a planilha como CSV antes de enviá-la.
 
+### Ativar Anotações
+
+Execute `migrations/20260925000000_add_annotations.sql`. Ela cria protocolos, demandas ordenadas e anotações em Markdown, com RLS por usuário e funções transacionais para salvar a ordem das demandas.
+
 ## 2. Configurar o ambiente local
 
 1. Copie `.env.example` para `.env.local` na raiz do projeto.

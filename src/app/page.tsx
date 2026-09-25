@@ -7,6 +7,7 @@ const modules = [
   { href: "/diary-task", title: "Task diária recorrente", description: "Marque tarefas que se repetem todos os dias e acompanhe sua frequência.", accent: "bg-blue-700" },
   { href: "/tasks", title: "TODO List", description: "Organize tarefas gerais em abas e consulte o que já foi concluído.", accent: "bg-amber-700" },
   { href: "/health-data", title: "Dados de Saúde", description: "Acompanhe peso, medidas corporais e a evolução dos seus indicadores de saúde.", accent: "bg-rose-700" },
+  { href: "/annotations", title: "Anotações", description: "Organize protocolos com demandas numeradas e escreva anotações completas em Markdown.", accent: "bg-violet-700" },
 ];
 
 export default async function Home() {
