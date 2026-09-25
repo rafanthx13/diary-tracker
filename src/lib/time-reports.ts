@@ -46,14 +46,15 @@ function totalsFrom(activities: ReportActivity[], labelFor: (activity: ReportAct
     .sort((first, second) => second.minutes - first.minutes || first.label.localeCompare(second.label, "pt-BR"));
 }
 
-export function createTimeReport(activities: ReportActivity[]): TimeReport {
+export function createTimeReport(activities: ReportActivity[], options: { includeActivityTotals?: boolean } = {}): TimeReport {
   const completedActivities = activities.filter((activity) => activity.ended_at);
   const totalMinutes = completedActivities.reduce((total, activity) => total + durationInMinutes(activity), 0);
+  const includeActivityTotals = options.includeActivityTotals ?? true;
 
   return {
     activityCount: completedActivities.length,
     totalMinutes,
-    byActivity: totalsFrom(completedActivities, (activity) => activity.title),
+    byActivity: includeActivityTotals ? totalsFrom(completedActivities, (activity) => activity.title) : [],
     byClassification: totalsFrom(completedActivities, (activity) => activity.classification?.name ?? "Sem classificação"),
     byCategory: totalsFrom(completedActivities, (activity) => activity.classification?.category?.name ?? "Sem categoria"),
   };
