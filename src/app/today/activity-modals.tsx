@@ -11,12 +11,12 @@ type ClassificationOption = {
   categoryName: string | null;
 };
 
-function Modal({ trigger, title, description, children }: { trigger: ReactNode; title: string; description: string; children: ReactNode }) {
+function Modal({ trigger, title, description, children, onOpen }: { trigger: ReactNode; title: string; description: string; children: ReactNode; onOpen?: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   return (
     <>
-      <button type="button" onClick={() => dialogRef.current?.showModal()} className="contents">{trigger}</button>
+      <button type="button" onClick={() => { onOpen?.(); dialogRef.current?.showModal(); }} className="contents">{trigger}</button>
       <dialog ref={dialogRef} className="m-auto w-[calc(100%-2rem)] max-w-xl rounded-3xl border border-stone-200 bg-white p-0 text-stone-900 shadow-2xl backdrop:bg-stone-950/50">
         <div className="flex items-start justify-between gap-4 border-b border-stone-200 px-5 py-4 sm:px-6">
           <div><h2 className="text-xl font-semibold">{title}</h2><p className="mt-1 text-sm leading-6 text-stone-600">{description}</p></div>
@@ -38,10 +38,20 @@ function ClassificationSelect({ options, defaultValue }: { options: Classificati
   return <label className="block text-sm font-medium">Classificação<select name="classificationId" required defaultValue={defaultValue ?? ""} className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"><option value="" disabled>Escolha uma classificação</option>{options.map((option) => <option key={option.id} value={option.id}>{option.name}{option.categoryName ? ` · ${option.categoryName}` : ""}</option>)}</select></label>;
 }
 
-export function ManualActivityModal({ options, defaultStart, defaultEnd, dateLabel }: { options: ClassificationOption[]; defaultStart: string; defaultEnd: string; dateLabel: string }) {
+export function ManualActivityModal({ options, defaultStart, defaultEnd, dateLabel, sourceTitleId, sourceClassificationId }: { options: ClassificationOption[]; defaultStart: string; defaultEnd: string; dateLabel: string; sourceTitleId?: string; sourceClassificationId?: string }) {
+  const titleRef = useRef<HTMLInputElement>(null);
+  const classificationRef = useRef<HTMLSelectElement>(null);
+
+  function copyQuickEntryValues() {
+    const title = sourceTitleId ? document.getElementById(sourceTitleId) : null;
+    const classification = sourceClassificationId ? document.getElementById(sourceClassificationId) : null;
+    if (title instanceof HTMLInputElement && titleRef.current) titleRef.current.value = title.value;
+    if (classification instanceof HTMLSelectElement && classificationRef.current) classificationRef.current.value = classification.value;
+  }
+
   return (
-    <Modal trigger={<span className="inline-flex w-full items-center justify-center rounded-xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white hover:bg-stone-700">+ Adicionar manualmente</span>} title="Registrar um período" description={`Adicione uma atividade que já aconteceu em ${dateLabel}.`}>
-      <form action={createManualActivity} onSubmit={closeFromForm} className="space-y-4 p-5 sm:p-6"><label className="block text-sm font-medium">Atividade<input name="title" required placeholder="Ex.: Arrumar quarto" className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><ClassificationSelect options={options} /><div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-medium">Início<input name="startedAt" type="datetime-local" defaultValue={defaultStart} required className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><label className="block text-sm font-medium">Fim<input name="endedAt" type="datetime-local" defaultValue={defaultEnd} required className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label></div><div className="flex justify-end gap-2 pt-2"><button type="button" onClick={closeFromButton} className="rounded-xl px-4 py-3 text-sm font-medium hover:bg-stone-100">Cancelar</button><button disabled={!options.length} className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">Salvar período</button></div></form>
+    <Modal trigger={<span className="inline-flex w-full items-center justify-center rounded-xl bg-amber-300 px-4 py-3 text-sm font-bold text-amber-950 shadow-lg ring-2 ring-amber-100/70 hover:bg-amber-200">+ Adicionar manualmente</span>} title="Registrar um período" description={`Adicione uma atividade que já aconteceu em ${dateLabel}.`} onOpen={copyQuickEntryValues}>
+      <form action={createManualActivity} onSubmit={closeFromForm} className="space-y-4 p-5 sm:p-6"><label className="block text-sm font-medium">Atividade<input ref={titleRef} name="title" required placeholder="Ex.: Arrumar quarto" className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><label className="block text-sm font-medium">Classificação<select ref={classificationRef} name="classificationId" required defaultValue="" className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"><option value="" disabled>Escolha uma classificação</option>{options.map((option) => <option key={option.id} value={option.id}>{option.name}{option.categoryName ? ` · ${option.categoryName}` : ""}</option>)}</select></label><div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-medium">Início<input name="startedAt" type="datetime-local" defaultValue={defaultStart} required className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><label className="block text-sm font-medium">Fim<input name="endedAt" type="datetime-local" defaultValue={defaultEnd} required className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label></div><div className="flex justify-end gap-2 pt-2"><button type="button" onClick={closeFromButton} className="rounded-xl px-4 py-3 text-sm font-medium hover:bg-stone-100">Cancelar</button><button disabled={!options.length} className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">Salvar período</button></div></form>
     </Modal>
   );
 }
