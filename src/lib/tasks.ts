@@ -2,6 +2,7 @@ export type Task = {
   id: string;
   title: string;
   is_daily: boolean;
+  allows_not_done: boolean;
   task_list_id: string | null;
   is_important: boolean;
   completed_at: string | null;

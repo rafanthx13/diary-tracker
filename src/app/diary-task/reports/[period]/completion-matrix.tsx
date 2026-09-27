@@ -4,6 +4,7 @@ import { formatReportDate } from "@/lib/time-reports";
 type MatrixRow = {
   task: Task;
   dates: string[];
+  statuses: Record<string, "completed" | "not_done">;
 };
 
 function shortDate(value: string) {
@@ -20,7 +21,7 @@ export function CompletionMatrix({ rows, dates }: { rows: MatrixRow[]; dates: st
       <div>
         <p className="text-sm font-medium text-stone-500">Visualização em malha</p>
         <h2 className="mt-1 text-xl font-semibold">Tarefas por dia</h2>
-        <p className="mt-2 text-sm leading-6 text-stone-600">Cada quadrado verde indica que a tarefa daquela linha foi concluída na data da coluna.</p>
+        <p className="mt-2 text-sm leading-6 text-stone-600">Verde indica uma atividade feita; âmbar indica que ela foi marcada como não feita.</p>
       </div>
 
       {rows.length ? (
@@ -37,7 +38,7 @@ export function CompletionMatrix({ rows, dates }: { rows: MatrixRow[]; dates: st
                 </tr>
               </thead>
               <tbody>
-                {rows.map(({ task, dates: completedDates }) => {
+                {rows.map(({ task, dates: completedDates, statuses }) => {
                   const completed = new Set(completedDates);
                   const percentage = dates.length ? Math.round((completed.size / dates.length) * 100) : 0;
                   return (
@@ -49,11 +50,13 @@ export function CompletionMatrix({ rows, dates }: { rows: MatrixRow[]; dates: st
                         </div>
                       </th>
                       {dates.map((date) => {
-                        const wasCompleted = completed.has(date);
+                        const status = statuses[date];
+                        const wasCompleted = status === "completed";
+                        const wasNotDone = status === "not_done";
                         return (
                           <td key={date} className="p-0.5">
-                            <span title={`${task.title} — ${formatReportDate(date)}: ${wasCompleted ? "concluída" : "não concluída"}`} className={`grid size-5 place-items-center rounded-[5px] ring-1 ${wasCompleted ? "bg-emerald-600 ring-emerald-700" : "bg-white ring-stone-200"}`}>
-                              <span className="sr-only">{wasCompleted ? "Concluída" : "Não concluída"}</span>
+                            <span title={`${task.title} — ${formatReportDate(date)}: ${wasCompleted ? "feita" : wasNotDone ? "não feita" : "pendente"}`} className={`grid size-5 place-items-center rounded-[5px] ring-1 ${wasCompleted ? "bg-emerald-600 ring-emerald-700" : wasNotDone ? "bg-amber-400 ring-amber-500" : "bg-white ring-stone-200"}`}>
+                              <span className="sr-only">{wasCompleted ? "Feita" : wasNotDone ? "Não feita" : "Pendente"}</span>
                             </span>
                           </td>
                         );
@@ -64,7 +67,7 @@ export function CompletionMatrix({ rows, dates }: { rows: MatrixRow[]; dates: st
               </tbody>
             </table>
           </div>
-          <div className="mt-4 flex items-center justify-end gap-2 text-xs text-stone-500"><span>Não feita</span><span className="size-4 rounded-[4px] bg-white ring-1 ring-stone-200" /><span className="size-4 rounded-[4px] bg-emerald-600 ring-1 ring-emerald-700" /><span>Feita</span></div>
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-2 text-xs text-stone-500"><span>Pendente</span><span className="size-4 rounded-[4px] bg-white ring-1 ring-stone-200" /><span>Não feita</span><span className="size-4 rounded-[4px] bg-amber-400 ring-1 ring-amber-500" /><span>Feita</span><span className="size-4 rounded-[4px] bg-emerald-600 ring-1 ring-emerald-700" /></div>
         </>
       ) : (
         <p className="mt-5 rounded-2xl border border-dashed border-stone-300 px-4 py-8 text-center text-sm text-stone-500">Nenhuma tarefa diária foi criada ainda.</p>

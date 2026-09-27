@@ -23,8 +23,8 @@ export async function GET() {
   const results = await Promise.all([
     supabase.from("activities").select("id, classification_id, title, started_at, ended_at, created_at, updated_at").eq("user_id", userId).order("started_at"),
     supabase.from("task_lists").select("id, name, description, sort_order, created_at, updated_at").eq("user_id", userId).order("sort_order").order("created_at"),
-    supabase.from("tasks").select("id, title, is_daily, task_list_id, is_important, completed_at, created_at, updated_at").eq("user_id", userId).order("created_at"),
-    supabase.from("daily_task_completions").select("id, task_id, completed_on, completed_at, created_at").eq("user_id", userId).order("completed_on").order("created_at"),
+    supabase.from("tasks").select("id, title, is_daily, allows_not_done, task_list_id, is_important, completed_at, created_at, updated_at").eq("user_id", userId).order("created_at"),
+    supabase.from("daily_task_completions").select("id, task_id, completed_on, status, completed_at, created_at").eq("user_id", userId).order("completed_on").order("created_at"),
     supabase.from("health_weight_entries").select("id, measured_on, weight_kg, notes, created_at, updated_at").eq("user_id", userId).order("measured_on"),
     supabase.from("body_measurement_types").select("id, name, instructions, unit, sort_order, created_at, updated_at").eq("user_id", userId).order("sort_order").order("created_at"),
     supabase.from("body_measurement_sessions").select("id, measured_on, notes, created_at, updated_at").eq("user_id", userId).order("measured_on"),

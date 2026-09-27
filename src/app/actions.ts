@@ -59,6 +59,7 @@ function revalidateTasks() {
   revalidatePath("/tasks/completed");
   revalidatePath("/tasks/reports");
   revalidatePath("/diary-task");
+  revalidatePath("/diary-task/manage");
   revalidatePath("/diary-task/reports/[period]", "page");
 }
 
@@ -481,6 +482,25 @@ export async function updateTaskTitle(formData: FormData) {
   revalidateTasks();
 }
 
+export async function updateDailyTaskSettings(formData: FormData) {
+  const userId = await requireUser();
+  const taskId = requiredText(formData, "taskId");
+  const title = requiredText(formData, "title");
+  const allowsNotDone = formData.get("allowsNotDone")?.toString() === "true";
+  if (title.length > 240) throw new Error("O nome da atividade deve ter no máximo 240 caracteres.");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("tasks")
+    .update({ title, allows_not_done: allowsNotDone })
+    .eq("id", taskId)
+    .eq("user_id", userId)
+    .eq("is_daily", true);
+
+  if (error) throw new Error("Não foi possível atualizar a atividade diária.");
+  revalidateTasks();
+}
+
 export async function deleteTask(formData: FormData) {
   const userId = await requireUser();
   const taskId = requiredText(formData, "taskId");
@@ -512,28 +532,30 @@ export async function setTaskCompletion(formData: FormData) {
   revalidateTasks();
 }
 
-export async function setDailyTaskCompletion(formData: FormData) {
+export async function setDailyTaskStatus(formData: FormData) {
   const userId = await requireUser();
   const taskId = requiredText(formData, "taskId");
-  const complete = formData.get("complete")?.toString() === "true";
+  const status = requiredText(formData, "status");
+  if (status !== "pending" && status !== "completed" && status !== "not_done") throw new Error("Status da atividade diária inválido.");
   const completedOn = completionDate(formData);
   const supabase = await createClient();
 
   const { data: task, error: taskError } = await supabase
     .from("tasks")
-    .select("id")
+    .select("id, allows_not_done")
     .eq("id", taskId)
     .eq("user_id", userId)
     .eq("is_daily", true)
     .maybeSingle();
   if (taskError || !task) throw new Error("A tarefa diária não está disponível.");
+  if (status === "not_done" && !task.allows_not_done) throw new Error("Esta atividade não permite o status ‘não feita’.");
 
-  if (complete) {
+  if (status !== "pending") {
     const { error } = await supabase.from("daily_task_completions").upsert(
-      { task_id: taskId, user_id: userId, completed_on: completedOn, completed_at: new Date().toISOString() },
+      { task_id: taskId, user_id: userId, completed_on: completedOn, status, completed_at: new Date().toISOString() },
       { onConflict: "task_id,completed_on" },
     );
-    if (error) throw new Error("Não foi possível concluir a tarefa diária.");
+    if (error) throw new Error("Não foi possível atualizar o status da atividade diária.");
   } else {
     const { error } = await supabase
       .from("daily_task_completions")
@@ -541,7 +563,7 @@ export async function setDailyTaskCompletion(formData: FormData) {
       .eq("task_id", taskId)
       .eq("user_id", userId)
       .eq("completed_on", completedOn);
-    if (error) throw new Error("Não foi possível reabrir a tarefa diária.");
+    if (error) throw new Error("Não foi possível deixar a atividade diária como pendente.");
   }
 
   revalidateTasks();
