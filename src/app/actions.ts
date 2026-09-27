@@ -1,7 +1,9 @@
 "use server";
 
 import { requireUser } from "@/lib/auth";
+import type { ActivityFormState } from "@/lib/activity-form-state";
 import type { ClassificationFormState } from "@/lib/classification-form-state";
+import { recordDiagnosticEvent } from "@/lib/diagnostics";
 import { recordSecurityAccessEvent } from "@/lib/security-access-log";
 import { saoPauloDate } from "@/lib/tasks";
 import { createClient } from "@/lib/supabase/server";
@@ -33,6 +35,9 @@ function completionDate(formData: FormData) {
 }
 
 function activityInsertError(error: { code?: string; message?: string }) {
+  if (error.code === "23P01") {
+    return new Error("Esse período coincide com outra atividade já registrada. O fim pode ser exatamente o início da próxima atividade, mas não pode haver nenhum horário em comum.");
+  }
   if (error.code === "23505") {
     return new Error("Já existe uma atividade em andamento. Encerre-a antes de iniciar outra.");
   }
@@ -43,7 +48,23 @@ function activityInsertError(error: { code?: string; message?: string }) {
     return new Error("A classificação escolhida não existe mais. Atualize a página e escolha outra.");
   }
 
-  return new Error(`Não foi possível iniciar a atividade${error.code ? ` (${error.code})` : ""}: ${error.message ?? "erro desconhecido"}`);
+  return new Error("Não foi possível salvar a atividade. Tente novamente.");
+}
+
+async function recordActivityWriteFailure(userId: string, source: "start" | "manual" | "update", error: { code?: string }) {
+  await recordDiagnosticEvent({
+    userId,
+    source: `activity_${source}`,
+    code: error.code === "23P01" ? "overlapping_period" : "database_write_failed",
+    severity: "warning",
+  });
+}
+
+function activityFormError(error: unknown): ActivityFormState {
+  return {
+    status: "error",
+    message: error instanceof Error ? error.message : "Não foi possível salvar a atividade. Tente novamente.",
+  };
 }
 
 function revalidateDiaryConfiguration() {
@@ -137,8 +158,24 @@ export async function startActivity(formData: FormData) {
     started_at: new Date().toISOString(),
   });
 
-  if (error) throw activityInsertError(error);
+  if (error) {
+    await recordActivityWriteFailure(userId, "start", error);
+    throw activityInsertError(error);
+  }
   revalidatePath("/today");
+}
+
+export async function createManualActivityWithFeedback(
+  _previousState: ActivityFormState,
+  formData: FormData,
+): Promise<ActivityFormState> {
+  void _previousState;
+  try {
+    await createManualActivity(formData);
+    return { status: "success", message: "" };
+  } catch (error) {
+    return activityFormError(error);
+  }
 }
 
 export async function stopActivity(formData: FormData) {
@@ -176,7 +213,10 @@ export async function createManualActivity(formData: FormData) {
     ended_at: endedAt,
   });
 
-  if (error) throw activityInsertError(error);
+  if (error) {
+    await recordActivityWriteFailure(userId, "manual", error);
+    throw activityInsertError(error);
+  }
   revalidatePath("/today");
 }
 
@@ -201,12 +241,26 @@ export async function updateActivity(formData: FormData) {
     .eq("id", activityId)
     .eq("user_id", userId);
 
-  if (error?.code === "23P01") throw new Error("Este período se sobrepõe a outra atividade registrada.");
-  if (error?.code === "23505") throw new Error("Já existe outra atividade em andamento.");
-  if (error) throw new Error("Não foi possível atualizar a atividade.");
+  if (error) {
+    await recordActivityWriteFailure(userId, "update", error);
+    throw activityInsertError(error);
+  }
 
   revalidatePath("/today");
   revalidatePath("/today/reports/[period]", "page");
+}
+
+export async function updateActivityWithFeedback(
+  _previousState: ActivityFormState,
+  formData: FormData,
+): Promise<ActivityFormState> {
+  void _previousState;
+  try {
+    await updateActivity(formData);
+    return { status: "success", message: "" };
+  } catch (error) {
+    return activityFormError(error);
+  }
 }
 
 export async function deleteActivity(formData: FormData) {

@@ -1,9 +1,10 @@
 "use client";
 
-import { createManualActivity, deleteActivity, updateActivity } from "@/app/actions";
+import { createManualActivityWithFeedback, deleteActivity, updateActivityWithFeedback } from "@/app/actions";
+import { initialActivityFormState, type ActivityFormState } from "@/lib/activity-form-state";
 import type { Activity } from "@/lib/diary";
 import { toDateTimeLocal } from "@/lib/diary";
-import { useRef, type FormEvent, type MouseEvent, type ReactNode } from "react";
+import { useActionState, useEffect, useRef, type FormEvent, type MouseEvent, type ReactNode } from "react";
 
 type ClassificationOption = {
   id: string;
@@ -28,7 +29,6 @@ function Modal({ trigger, title, description, children, onOpen }: { trigger: Rea
   );
 }
 
-function closeFromForm(event: FormEvent<HTMLFormElement>) { event.currentTarget.closest("dialog")?.close(); }
 function closeFromButton(event: MouseEvent<HTMLButtonElement>) { event.currentTarget.closest("dialog")?.close(); }
 function confirmDeletion(event: FormEvent<HTMLFormElement>) {
   if (!window.confirm("Excluir esta atividade? Essa ação não pode ser desfeita.")) event.preventDefault();
@@ -51,7 +51,7 @@ export function ManualActivityModal({ options, defaultStart, defaultEnd, dateLab
 
   return (
     <Modal trigger={<span className="inline-flex w-full items-center justify-center rounded-xl bg-amber-300 px-4 py-3 text-sm font-bold text-amber-950 shadow-lg ring-2 ring-amber-100/70 hover:bg-amber-200">+ Adicionar manualmente</span>} title="Registrar um período" description={`Adicione uma atividade que já aconteceu em ${dateLabel}.`} onOpen={copyQuickEntryValues}>
-      <form action={createManualActivity} onSubmit={closeFromForm} className="space-y-4 p-5 sm:p-6"><label className="block text-sm font-medium">Atividade<input ref={titleRef} name="title" required placeholder="Ex.: Arrumar quarto" className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><label className="block text-sm font-medium">Classificação<select ref={classificationRef} name="classificationId" required defaultValue="" className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"><option value="" disabled>Escolha uma classificação</option>{options.map((option) => <option key={option.id} value={option.id}>{option.name}{option.categoryName ? ` · ${option.categoryName}` : ""}</option>)}</select></label><div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-medium">Início<input name="startedAt" type="datetime-local" defaultValue={defaultStart} required className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><label className="block text-sm font-medium">Fim<input name="endedAt" type="datetime-local" defaultValue={defaultEnd} required className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label></div><div className="flex justify-end gap-2 pt-2"><button type="button" onClick={closeFromButton} className="rounded-xl px-4 py-3 text-sm font-medium hover:bg-stone-100">Cancelar</button><button disabled={!options.length} className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">Salvar período</button></div></form>
+      <ManualActivityForm options={options} defaultStart={defaultStart} defaultEnd={defaultEnd} titleRef={titleRef} classificationRef={classificationRef} />
     </Modal>
   );
 }
@@ -59,7 +59,31 @@ export function ManualActivityModal({ options, defaultStart, defaultEnd, dateLab
 export function EditActivityModal({ activity, options }: { activity: Activity; options: ClassificationOption[] }) {
   return (
     <Modal trigger={<span className="inline-flex items-center rounded-lg bg-stone-100 px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-200">Editar</span>} title="Editar atividade" description="Altere o nome, a classificação e os horários deste registro.">
-      <div className="space-y-4 p-5 sm:p-6"><form action={updateActivity} onSubmit={closeFromForm} className="space-y-4"><input type="hidden" name="activityId" value={activity.id} /><label className="block text-sm font-medium">Atividade<input name="title" required defaultValue={activity.title} className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><ClassificationSelect options={options} defaultValue={activity.classification?.id} /><div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-medium">Início<input name="startedAt" type="datetime-local" defaultValue={toDateTimeLocal(new Date(activity.started_at))} required className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><label className="block text-sm font-medium">Fim<input name="endedAt" type="datetime-local" defaultValue={activity.ended_at ? toDateTimeLocal(new Date(activity.ended_at)) : ""} required={Boolean(activity.ended_at)} className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label></div>{!activity.ended_at && <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">Deixe o fim vazio para manter a atividade em andamento.</p>}<div className="flex justify-end gap-2 pt-2"><button type="button" onClick={closeFromButton} className="rounded-xl px-4 py-3 text-sm font-medium hover:bg-stone-100">Cancelar</button><button className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-800">Salvar alterações</button></div></form><form action={deleteActivity} onSubmit={confirmDeletion} className="border-t border-stone-200 pt-4"><input type="hidden" name="activityId" value={activity.id} /><button className="rounded-xl px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50">Excluir atividade</button></form></div>
+      <div className="space-y-4 p-5 sm:p-6"><EditActivityForm activity={activity} options={options} /><form action={deleteActivity} onSubmit={confirmDeletion} className="border-t border-stone-200 pt-4"><input type="hidden" name="activityId" value={activity.id} /><button className="rounded-xl px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50">Excluir atividade</button></form></div>
     </Modal>
   );
+}
+
+function ActivityFormAlert({ state }: { state: ActivityFormState }) {
+  return state.status === "error" ? <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm leading-5 text-red-800">{state.message}</p> : null;
+}
+
+function useCloseOnSuccess(state: ActivityFormState, formRef: React.RefObject<HTMLFormElement | null>) {
+  useEffect(() => {
+    if (state.status === "success") formRef.current?.closest("dialog")?.close();
+  }, [state.status, formRef]);
+}
+
+function ManualActivityForm({ options, defaultStart, defaultEnd, titleRef, classificationRef }: { options: ClassificationOption[]; defaultStart: string; defaultEnd: string; titleRef: React.RefObject<HTMLInputElement | null>; classificationRef: React.RefObject<HTMLSelectElement | null> }) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const [state, formAction, isPending] = useActionState<ActivityFormState, FormData>(createManualActivityWithFeedback, initialActivityFormState);
+  useCloseOnSuccess(state, formRef);
+  return <form ref={formRef} action={formAction} className="space-y-4 p-5 sm:p-6"><ActivityFormAlert state={state} /><label className="block text-sm font-medium">Atividade<input ref={titleRef} name="title" required placeholder="Ex.: Arrumar quarto" className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><label className="block text-sm font-medium">Classificação<select ref={classificationRef} name="classificationId" required defaultValue="" className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"><option value="" disabled>Escolha uma classificação</option>{options.map((option) => <option key={option.id} value={option.id}>{option.name}{option.categoryName ? ` · ${option.categoryName}` : ""}</option>)}</select></label><div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-medium">Início<input name="startedAt" type="datetime-local" defaultValue={defaultStart} required className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><label className="block text-sm font-medium">Fim<input name="endedAt" type="datetime-local" defaultValue={defaultEnd} required className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label></div><div className="flex justify-end gap-2 pt-2"><button type="button" onClick={closeFromButton} className="rounded-xl px-4 py-3 text-sm font-medium hover:bg-stone-100">Cancelar</button><button disabled={!options.length || isPending} className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">{isPending ? "Salvando..." : "Salvar período"}</button></div></form>;
+}
+
+function EditActivityForm({ activity, options }: { activity: Activity; options: ClassificationOption[] }) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const [state, formAction, isPending] = useActionState<ActivityFormState, FormData>(updateActivityWithFeedback, initialActivityFormState);
+  useCloseOnSuccess(state, formRef);
+  return <form ref={formRef} action={formAction} className="space-y-4"><ActivityFormAlert state={state} /><input type="hidden" name="activityId" value={activity.id} /><label className="block text-sm font-medium">Atividade<input name="title" required defaultValue={activity.title} className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><ClassificationSelect options={options} defaultValue={activity.classification?.id} /><div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-medium">Início<input name="startedAt" type="datetime-local" defaultValue={toDateTimeLocal(new Date(activity.started_at))} required className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><label className="block text-sm font-medium">Fim<input name="endedAt" type="datetime-local" defaultValue={activity.ended_at ? toDateTimeLocal(new Date(activity.ended_at)) : ""} required={Boolean(activity.ended_at)} className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label></div>{!activity.ended_at && <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">Deixe o fim vazio para manter a atividade em andamento.</p>}<div className="flex justify-end gap-2 pt-2"><button type="button" onClick={closeFromButton} className="rounded-xl px-4 py-3 text-sm font-medium hover:bg-stone-100">Cancelar</button><button disabled={isPending} className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">{isPending ? "Salvando..." : "Salvar alterações"}</button></div></form>;
 }
