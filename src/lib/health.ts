@@ -5,6 +5,16 @@ export type WeightEntry = {
   notes: string;
 };
 
+export type SleepEntry = {
+  id: string;
+  slept_on: string;
+  sleep_time: string;
+  wake_time: string;
+  quality_score: number | null;
+  description: string;
+  duration_minutes: number;
+};
+
 export type MeasurementType = {
   id: string;
   name: string;
@@ -27,6 +37,19 @@ export function formatDecimal(value: number, maximumFractionDigits = 2) {
     minimumFractionDigits: 0,
     maximumFractionDigits,
   }).format(value);
+}
+
+export function formatSleepDuration(minutes: number) {
+  return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}min`;
+}
+
+export function sleepDurationMinutes(sleepTime: string, wakeTime: string) {
+  const toMinutes = (value: string) => {
+    const [hours, minutes] = value.slice(0, 5).split(":").map(Number);
+    return hours * 60 + minutes;
+  };
+  const duration = toMinutes(wakeTime) - toMinutes(sleepTime);
+  return duration > 0 ? duration : duration + 24 * 60;
 }
 
 export function validHealthDate(value: string | undefined, fallback: string) {

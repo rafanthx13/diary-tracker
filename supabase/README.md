@@ -55,6 +55,14 @@ Execute `migrations/20260921050000_task_priorities.sql`. Ela adiciona descriçã
 
 Execute `migrations/20260921060000_health_data.sql`. Ela cria os registros diários de peso, sessões de medidas corporais, partes do corpo personalizáveis e as respectivas regras de segurança.
 
+### Ativar acompanhamento de Sono
+
+Execute `migrations/20261009010000_add_sleep_tracking.sql`. Ela cria o registro diário de sono, associado ao dia em que você acordou, e a meta pessoal de sono, que começa em 7 horas. As tabelas possuem RLS e só ficam disponíveis para a conta autenticada.
+
+### Importar registros de Sono
+
+Execute também `migrations/20261010010000_allow_imported_sleep_entries.sql`. Ela permite importar registros históricos sem uma nota de qualidade. Em **Dados de Saúde > Sono > Importar CSV**, use as colunas `date`, `sleep_time` e `wake_time`; a própria tela exibe um exemplo pronto para uso.
+
 ### Importar medidas antigas do Excel
 
 Na tela **Dados de Saúde > Minhas medidas corporais > Importar**, baixe o modelo CSV. O formato usa uma linha por medida: `date;body_part;value;unit;instructions`. Datas podem estar em `DD/MM/AAAA` ou `AAAA-MM-DD`; uma linha cuja parte do corpo seja `Peso` alimenta o histórico de peso em kg. Salve a planilha como CSV antes de enviá-la.

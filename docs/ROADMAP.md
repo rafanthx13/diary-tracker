@@ -57,6 +57,8 @@ Este documento registra o estado observado no código e nas migrações do proje
 - Relatórios de medidas por parte do corpo, com último valor, evolução, mínimo, máximo, histórico e gráfico de linha.
 - Importação de dados históricos via CSV, com modelo para download.
 - Criação automática de tipos de medida desconhecidos durante a importação e tratamento de `Peso` como histórico de peso.
+- Registro diário de sono, com horários para dormir e acordar, duração calculada, nota de qualidade e descrição opcional.
+- Meta pessoal de sono (7 horas inicialmente), indicação de meta atingida e relatórios semanal, mensal e anual com médias, extremos e frequência da meta.
 
 ### Anotações
 
@@ -98,7 +100,7 @@ As opções abaixo são hipóteses para discussão. Elas não devem ser interpre
 
 ### Saúde
 
-- Registro de outros indicadores, como sono, treino, humor ou ingestão de água.
+- Registro de outros indicadores, como treino, humor ou ingestão de água.
 - Comparação de medidas e peso entre duas datas escolhidas.
 - Exportação e backup dos dados de saúde.
 - Gráficos com faixa de meta e médias móveis para reduzir ruído nas tendências.

@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUser } from "@/lib/auth";
+import { sleepDurationMinutes } from "@/lib/health";
 import { saoPauloDate } from "@/lib/tasks";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
@@ -36,6 +37,78 @@ function refreshHealthPages() {
   revalidatePath("/health-data/measurements");
   revalidatePath("/health-data/measurements/reports");
   revalidatePath("/health-data/measurements/types");
+  revalidatePath("/health-data/sleep");
+  revalidatePath("/health-data/sleep/reports");
+}
+
+function timeField(formData: FormData, name: string) {
+  const value = textField(formData, name, 5, true);
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) throw new Error(`Informe um horário válido para ${name === "sleepTime" ? "dormir" : "acordar"}.`);
+  return value;
+}
+
+export async function saveSleepEntry(formData: FormData) {
+  const userId = await requireUser();
+  const sleptOn = dateField(formData, "sleptOn");
+  const sleepTime = timeField(formData, "sleepTime");
+  const wakeTime = timeField(formData, "wakeTime");
+  const qualityScore = Number(formData.get("qualityScore"));
+  if (!Number.isInteger(qualityScore) || qualityScore < 0 || qualityScore > 10) throw new Error("Informe uma nota de sono entre 0 e 10.");
+  const durationMinutes = sleepDurationMinutes(sleepTime, wakeTime);
+  if (durationMinutes < 60 || durationMinutes > 16 * 60) throw new Error("A duração do sono deve ficar entre 1 e 16 horas.");
+  const description = textField(formData, "description", 500);
+  const supabase = await createClient();
+  const { error } = await supabase.from("health_sleep_entries").upsert({ user_id: userId, slept_on: sleptOn, sleep_time: sleepTime, wake_time: wakeTime, quality_score: qualityScore, description, duration_minutes: durationMinutes }, { onConflict: "user_id,slept_on" });
+  if (error) throw new Error("Não foi possível salvar o registro de sono. Execute a migração 20261009010000 no Supabase.");
+  refreshHealthPages();
+}
+
+export async function saveSleepGoal(formData: FormData) {
+  const userId = await requireUser();
+  const hours = Number(String(formData.get("goalHours") ?? "").replace(",", "."));
+  if (!Number.isFinite(hours) || hours < 1 || hours > 16) throw new Error("Informe uma meta entre 1 e 16 horas.");
+  const goalMinutes = Math.round(hours * 60);
+  const supabase = await createClient();
+  const { error } = await supabase.from("health_sleep_settings").upsert({ user_id: userId, goal_minutes: goalMinutes }, { onConflict: "user_id" });
+  if (error) throw new Error("Não foi possível salvar a meta de sono. Execute a migração 20261009010000 no Supabase.");
+  refreshHealthPages();
+}
+
+function importedSleepTime(value: string, line: number, label: string) {
+  const time = value.trim();
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new Error(`${label} inválida na linha ${line}. Use HH:MM.`);
+  return time;
+}
+
+export async function importSleepEntries(formData: FormData) {
+  const userId = await requireUser();
+  const file = formData.get("file");
+  if (!(file instanceof File) || !file.size) throw new Error("Selecione um arquivo CSV.");
+  if (file.size > 2_000_000) throw new Error("O arquivo deve ter no máximo 2 MB.");
+  const content = (await file.text()).replace(/^\uFEFF/, "");
+  const lines = content.split(/\r?\n/).filter((line) => line.trim());
+  if (lines.length < 2) throw new Error("O CSV precisa conter cabeçalho e pelo menos uma linha de dados.");
+  const delimiter = (lines[0].match(/;/g)?.length ?? 0) >= (lines[0].match(/,/g)?.length ?? 0) ? ";" : ",";
+  const headers = parseCsvLine(lines[0], delimiter).map(normalizeHeader);
+  const indexOf = (...names: string[]) => names.map((name) => headers.indexOf(name)).find((index) => index >= 0) ?? -1;
+  const dateIndex = indexOf("date", "data");
+  const sleepTimeIndex = indexOf("sleep_time", "hora_inicio", "inicio", "start_time");
+  const wakeTimeIndex = indexOf("wake_time", "hora_fim", "fim", "end_time");
+  if (dateIndex < 0 || sleepTimeIndex < 0 || wakeTimeIndex < 0) throw new Error("O cabeçalho deve conter date, sleep_time e wake_time.");
+
+  const records = lines.slice(1).map((line, index) => {
+    const cells = parseCsvLine(line, delimiter);
+    const sleepTime = importedSleepTime(String(cells[sleepTimeIndex] ?? ""), index + 2, "Hora de início");
+    const wakeTime = importedSleepTime(String(cells[wakeTimeIndex] ?? ""), index + 2, "Hora de fim");
+    const durationMinutes = sleepDurationMinutes(sleepTime, wakeTime);
+    if (durationMinutes < 60 || durationMinutes > 16 * 60) throw new Error(`Duração de sono inválida na linha ${index + 2}.`);
+    return { user_id: userId, slept_on: importedDate(String(cells[dateIndex] ?? ""), index + 2), sleep_time: sleepTime, wake_time: wakeTime, quality_score: null, description: "", duration_minutes: durationMinutes };
+  });
+  const supabase = await createClient();
+  const { error } = await supabase.from("health_sleep_entries").upsert(records, { onConflict: "user_id,slept_on" });
+  if (error) throw new Error("Não foi possível importar os registros de sono. Execute a migração 20261010010000 no Supabase.");
+  refreshHealthPages();
+  redirect(`/health-data/sleep/import?imported=${records.length}`);
 }
 
 export async function saveWeight(formData: FormData) {

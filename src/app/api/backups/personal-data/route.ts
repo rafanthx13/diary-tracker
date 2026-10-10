@@ -29,6 +29,8 @@ export async function GET() {
     supabase.from("body_measurement_types").select("id, name, instructions, unit, sort_order, created_at, updated_at").eq("user_id", userId).order("sort_order").order("created_at"),
     supabase.from("body_measurement_sessions").select("id, measured_on, notes, created_at, updated_at").eq("user_id", userId).order("measured_on"),
     supabase.from("body_measurement_values").select("id, session_id, measurement_type_id, value, created_at, updated_at").eq("user_id", userId).order("created_at"),
+    supabase.from("health_sleep_settings").select("goal_minutes, created_at, updated_at").eq("user_id", userId),
+    supabase.from("health_sleep_entries").select("id, slept_on, sleep_time, wake_time, quality_score, description, duration_minutes, created_at, updated_at").eq("user_id", userId).order("slept_on"),
     supabase.from("protocols").select("id, title, created_at, updated_at").eq("user_id", userId).order("created_at"),
     supabase.from("protocol_demands").select("id, protocol_id, content, sort_order, created_at, updated_at").eq("user_id", userId).order("protocol_id").order("sort_order"),
     supabase.from("markdown_notes").select("id, title, content, created_at, updated_at").eq("user_id", userId).order("created_at"),
@@ -49,9 +51,11 @@ export async function GET() {
     body_measurement_types: results[5].data ?? [],
     body_measurement_sessions: results[6].data ?? [],
     body_measurement_values: results[7].data ?? [],
-    protocols: results[8].data ?? [],
-    protocol_demands: results[9].data ?? [],
-    markdown_notes: results[10].data ?? [],
+    health_sleep_settings: results[8].data ?? [],
+    health_sleep_entries: results[9].data ?? [],
+    protocols: results[10].data ?? [],
+    protocol_demands: results[11].data ?? [],
+    markdown_notes: results[12].data ?? [],
   };
   const backup: PersonalBackup = {
     format: PERSONAL_BACKUP_FORMAT,
