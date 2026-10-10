@@ -36,8 +36,8 @@ export default async function TasksPage({ searchParams }: Props) {
   const unassignedTasks = pendingTasks.filter((task) => !task.task_list_id);
   const sections: TaskSection[] = selectedView === "all"
     ? [
-        ...lists.map((list) => ({ id: list.id, title: list.name, description: list.description, tasks: pendingTasks.filter((task) => task.task_list_id === list.id) })),
         ...(unassignedTasks.length || !lists.length ? [{ id: "pending", title: "Pendente", description: "Tarefas que ainda não foram colocadas em uma aba.", tasks: unassignedTasks }] : []),
+        ...lists.map((list) => ({ id: list.id, title: list.name, description: list.description, tasks: pendingTasks.filter((task) => task.task_list_id === list.id) })),
       ]
     : selectedView === "pending"
       ? [{ id: "pending", title: "Pendente", description: "Tarefas que ainda não foram colocadas em uma aba.", tasks: unassignedTasks }]
