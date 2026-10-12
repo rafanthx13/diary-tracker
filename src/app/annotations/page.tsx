@@ -19,6 +19,12 @@ const submodules = [
     description: "Registre textos livres em Markdown e leia o conteúdo com títulos, listas, tabelas, links e código formatados.",
     action: "Abrir anotações",
   },
+  {
+    href: "/annotations/plano-final-14k",
+    title: "Plano final 14k",
+    description: "Consulte o plano visual mantido diretamente como imagem no repositório.",
+    action: "Abrir plano",
+  },
 ];
 
 export default async function AnnotationsPage() {
