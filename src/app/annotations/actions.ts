@@ -72,6 +72,23 @@ export async function updateProtocol(formData: FormData) {
   redirect(`/annotations/protocols/${protocolId}`);
 }
 
+export async function deleteProtocol(formData: FormData) {
+  const userId = await requireUser();
+  const protocolId = requiredText(formData, "protocolId", 36);
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("protocols")
+    .delete()
+    .eq("id", protocolId)
+    .eq("user_id", userId)
+    .select("id")
+    .maybeSingle();
+
+  if (error || !data) throw new Error("Não foi possível excluir o protocolo.");
+  revalidateAnnotations();
+  redirect("/annotations/protocols");
+}
+
 export async function createNote(formData: FormData) {
   const userId = await requireUser();
   const title = requiredText(formData, "title", 160);
@@ -110,4 +127,21 @@ export async function updateNote(formData: FormData) {
   revalidateAnnotations();
   revalidatePath(`/annotations/notes/${noteId}`);
   redirect(`/annotations/notes/${noteId}`);
+}
+
+export async function deleteNote(formData: FormData) {
+  const userId = await requireUser();
+  const noteId = requiredText(formData, "noteId", 36);
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("markdown_notes")
+    .delete()
+    .eq("id", noteId)
+    .eq("user_id", userId)
+    .select("id")
+    .maybeSingle();
+
+  if (error || !data) throw new Error("Não foi possível excluir a anotação.");
+  revalidateAnnotations();
+  redirect("/annotations/notes");
 }

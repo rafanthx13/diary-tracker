@@ -1,5 +1,10 @@
+"use client";
+
 import { createNote, updateNote } from "@/app/annotations/actions";
+import { useUnsavedChangesWarning } from "@/app/annotations/use-unsaved-changes-warning";
 import Link from "next/link";
+import { useRef, useState, type FormEvent } from "react";
+import { useFormStatus } from "react-dom";
 
 type Props = {
   mode: "create" | "edit";
@@ -8,22 +13,45 @@ type Props = {
   initialContent?: string;
 };
 
+function SaveButton({ mode, isSubmitting }: Pick<Props, "mode"> & { isSubmitting: boolean }) {
+  const { pending } = useFormStatus();
+  const isSaving = pending || isSubmitting;
+
+  return <button disabled={isSaving} className="rounded-xl bg-violet-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-50">{isSaving ? "Salvando..." : mode === "create" ? "Criar anotação" : "Salvar alterações"}</button>;
+}
+
 export function NoteForm({ mode, noteId, initialTitle = "", initialContent = "" }: Props) {
   const cancelHref = mode === "edit" && noteId ? `/annotations/notes/${noteId}` : "/annotations/notes";
+  const [title, setTitle] = useState(initialTitle);
+  const [content, setContent] = useState(initialContent);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const hasSubmitted = useRef(false);
+  const hasUnsavedChanges = title !== initialTitle || content !== initialContent;
+  useUnsavedChangesWarning(hasUnsavedChanges, isSubmitting);
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    if (hasSubmitted.current) {
+      event.preventDefault();
+      return;
+    }
+    hasSubmitted.current = true;
+    setIsSubmitting(true);
+  }
 
   return (
-    <form action={mode === "create" ? createNote : updateNote} className="space-y-6">
+    <form action={mode === "create" ? createNote : updateNote} onSubmit={handleSubmit} className="space-y-6">
       {noteId && <input type="hidden" name="noteId" value={noteId} />}
       <label className="block text-sm font-semibold text-stone-800">
         Título <span className="text-red-600">*</span>
-        <input name="title" required maxLength={160} defaultValue={initialTitle} autoFocus placeholder="Ex.: Ideias para o próximo projeto" className="mt-2 w-full rounded-2xl border border-stone-300 px-4 py-3 text-base outline-none transition focus:border-violet-600 focus:ring-2 focus:ring-violet-100" />
+        <input name="title" required maxLength={160} value={title} onChange={(event) => setTitle(event.target.value)} autoFocus placeholder="Ex.: Ideias para o próximo projeto" className="mt-2 w-full rounded-2xl border border-stone-300 px-4 py-3 text-base outline-none transition focus:border-violet-600 focus:ring-2 focus:ring-violet-100" />
       </label>
       <label className="block text-sm font-semibold text-stone-800">
         Conteúdo em Markdown
         <textarea
           name="content"
           maxLength={100000}
-          defaultValue={initialContent}
+          value={content}
+          onChange={(event) => setContent(event.target.value)}
           rows={20}
           spellCheck
           placeholder={"# Título\n\nEscreva sua anotação usando **Markdown**.\n\n- Item 1\n- Item 2"}
@@ -33,7 +61,7 @@ export function NoteForm({ mode, noteId, initialTitle = "", initialContent = "" 
       </label>
       <div className="flex flex-wrap justify-end gap-3 border-t border-stone-200 pt-6">
         <Link href={cancelHref} className="rounded-xl px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Cancelar</Link>
-        <button className="rounded-xl bg-violet-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-violet-800">{mode === "create" ? "Criar anotação" : "Salvar alterações"}</button>
+        <SaveButton mode={mode} isSubmitting={isSubmitting} />
       </div>
     </form>
   );

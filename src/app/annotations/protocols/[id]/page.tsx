@@ -1,4 +1,5 @@
 import { AnnotationsHeader } from "@/app/annotations/annotations-header";
+import { AnnotationDeleteButton } from "@/app/annotations/annotation-delete-button";
 import { formatAnnotationDate, type Protocol, type ProtocolDemand } from "@/lib/annotations";
 import { requireUser } from "@/lib/auth";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
@@ -30,7 +31,7 @@ export default async function ProtocolDetailPage({ params }: Props) {
       <div className="mx-auto max-w-4xl px-5 py-8 sm:px-8">
         <div className="mb-5 flex flex-wrap justify-between gap-3">
           <Link href="/annotations/protocols" className="rounded-xl px-4 py-2.5 text-sm font-semibold text-stone-700 hover:bg-stone-200">← Voltar aos protocolos</Link>
-          <Link href={`/annotations/protocols/${protocol.id}/edit`} className="rounded-xl bg-violet-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-800">Editar protocolo</Link>
+          <div className="flex flex-wrap gap-3"><AnnotationDeleteButton type="protocol" id={protocol.id} title={protocol.title} /><Link href={`/annotations/protocols/${protocol.id}/edit`} className="rounded-xl bg-violet-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-800">Editar protocolo</Link></div>
         </div>
         <section className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-8">
           <div className="flex items-center justify-between gap-4 border-b border-stone-200 pb-5"><h2 className="text-xl font-semibold">Demandas</h2><span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-semibold text-violet-800">{demands.length}</span></div>

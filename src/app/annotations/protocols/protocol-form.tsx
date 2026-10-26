@@ -1,9 +1,11 @@
 "use client";
 
 import { createProtocol, updateProtocol } from "@/app/annotations/actions";
+import { useUnsavedChangesWarning } from "@/app/annotations/use-unsaved-changes-warning";
 import type { ProtocolDemand } from "@/lib/annotations";
 import Link from "next/link";
-import { useState, type DragEvent, type KeyboardEvent } from "react";
+import { useRef, useState, type DragEvent, type FormEvent, type KeyboardEvent } from "react";
+import { useFormStatus } from "react-dom";
 
 type EditableDemand = { clientId: string; content: string };
 
@@ -14,6 +16,13 @@ type Props = {
   initialDemands?: ProtocolDemand[];
 };
 
+function SaveButton({ mode, isSubmitting }: Pick<Props, "mode"> & { isSubmitting: boolean }) {
+  const { pending } = useFormStatus();
+  const isSaving = pending || isSubmitting;
+
+  return <button disabled={isSaving} className="rounded-xl bg-violet-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-50">{isSaving ? "Salvando..." : mode === "create" ? "Criar protocolo" : "Salvar alterações"}</button>;
+}
+
 export function ProtocolForm({ mode, protocolId, initialTitle = "", initialDemands = [] }: Props) {
   const [demands, setDemands] = useState<EditableDemand[]>(() =>
     initialDemands.map((demand, index) => ({ clientId: demand.id || `initial-${index}`, content: demand.content })),
@@ -21,6 +30,12 @@ export function ProtocolForm({ mode, protocolId, initialTitle = "", initialDeman
   const [isAdding, setIsAdding] = useState(false);
   const [newDemand, setNewDemand] = useState("");
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [title, setTitle] = useState(initialTitle);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const hasSubmitted = useRef(false);
+  const initialDemandContents = initialDemands.map((demand) => demand.content);
+  const hasUnsavedChanges = title !== initialTitle || JSON.stringify(demands.map((demand) => demand.content)) !== JSON.stringify(initialDemandContents) || Boolean(newDemand.trim());
+  useUnsavedChangesWarning(hasUnsavedChanges, isSubmitting);
 
   function addDemand() {
     const content = newDemand.trim();
@@ -56,8 +71,17 @@ export function ProtocolForm({ mode, protocolId, initialTitle = "", initialDeman
   const formAction = mode === "create" ? createProtocol : updateProtocol;
   const cancelHref = mode === "edit" && protocolId ? `/annotations/protocols/${protocolId}` : "/annotations/protocols";
 
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    if (hasSubmitted.current) {
+      event.preventDefault();
+      return;
+    }
+    hasSubmitted.current = true;
+    setIsSubmitting(true);
+  }
+
   return (
-    <form action={formAction} className="space-y-7">
+    <form action={formAction} onSubmit={handleSubmit} className="space-y-7">
       {protocolId && <input type="hidden" name="protocolId" value={protocolId} />}
       <input type="hidden" name="demands" value={JSON.stringify(demands.map((demand) => demand.content))} />
 
@@ -67,7 +91,8 @@ export function ProtocolForm({ mode, protocolId, initialTitle = "", initialDeman
           name="title"
           required
           maxLength={160}
-          defaultValue={initialTitle}
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
           autoFocus
           placeholder="Ex.: Protocolo de atendimento ao cliente"
           className="mt-2 w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-base outline-none transition focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
@@ -166,9 +191,7 @@ export function ProtocolForm({ mode, protocolId, initialTitle = "", initialDeman
 
       <div className="flex flex-wrap justify-end gap-3 border-t border-stone-200 pt-6">
         <Link href={cancelHref} className="rounded-xl px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Cancelar</Link>
-        <button className="rounded-xl bg-violet-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-violet-800">
-          {mode === "create" ? "Criar protocolo" : "Salvar alterações"}
-        </button>
+        <SaveButton mode={mode} isSubmitting={isSubmitting} />
       </div>
     </form>
   );
