@@ -104,13 +104,17 @@ export default async function TodayPage({ searchParams }: PageProps) {
   const defaultEnd = toDateTimeLocal(defaultEndDate);
   const minutesByCategory = new Map<string, number>();
   let totalMinutes = 0;
+  let uncategorizedMinutes = 0;
   for (const activity of activities) {
     const [hours, minutesPart] = formatDuration(activity.started_at, activity.ended_at).split(":").map(Number);
     const minutes = hours * 60 + minutesPart;
     totalMinutes += minutes;
 
     const categoryId = activity.classification?.category?.id;
-    if (!categoryId) continue;
+    if (!categoryId) {
+      uncategorizedMinutes += minutes;
+      continue;
+    }
     minutesByCategory.set(categoryId, (minutesByCategory.get(categoryId) ?? 0) + minutes);
   }
 
@@ -161,7 +165,7 @@ export default async function TodayPage({ searchParams }: PageProps) {
         <section className="lg:col-span-2">
           <div className="mb-3"><p className="text-xs font-medium text-stone-500">Resumo do dia</p><h2 className="text-lg font-semibold">Tempo por categoria</h2></div>
           <article className="mb-3 flex items-center justify-between rounded-2xl border border-stone-200 bg-white px-4 py-3 shadow-sm"><h3 className="text-sm font-semibold">Tempo total registrado</h3><p className={`ml-3 text-xl font-semibold tabular-nums ${totalMinutes > 16 * 60 ? "text-red-600" : ""}`}>{formatTotalMinutes(totalMinutes)}</p></article>
-          <div className="grid gap-3 sm:grid-cols-3">{(categoriesData ?? []).map((category) => <article key={category.id} className="flex items-center justify-between rounded-2xl border border-stone-200 bg-white px-4 py-3 shadow-sm"><div className="flex min-w-0 items-center gap-3"><span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: category.color }} /><h3 className="truncate text-sm font-semibold">{category.name}</h3></div><p className="ml-3 text-xl font-semibold tabular-nums">{formatTotalMinutes(minutesByCategory.get(category.id) ?? 0)}</p></article>)}</div>
+          <div className="grid gap-3 sm:grid-cols-3"><article className="flex items-center justify-between rounded-2xl border border-stone-200 bg-white px-4 py-3 shadow-sm"><div className="flex min-w-0 items-center gap-3"><span className="size-3 shrink-0 rounded-full bg-stone-400" /><h3 className="truncate text-sm font-semibold">Sem categoria</h3></div><p className="ml-3 text-xl font-semibold tabular-nums">{formatTotalMinutes(uncategorizedMinutes)}</p></article>{(categoriesData ?? []).map((category) => <article key={category.id} className="flex items-center justify-between rounded-2xl border border-stone-200 bg-white px-4 py-3 shadow-sm"><div className="flex min-w-0 items-center gap-3"><span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: category.color }} /><h3 className="truncate text-sm font-semibold">{category.name}</h3></div><p className="ml-3 text-xl font-semibold tabular-nums">{formatTotalMinutes(minutesByCategory.get(category.id) ?? 0)}</p></article>)}</div>
         </section>
       </div>
     </main>
