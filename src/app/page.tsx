@@ -8,6 +8,7 @@ const modules = [
   { href: "/tasks", title: "TODO List", description: "Organize tarefas gerais em abas e consulte o que já foi concluído.", accent: "bg-amber-700" },
   { href: "/health-data", title: "Dados de Saúde", description: "Acompanhe peso, medidas corporais e a evolução dos seus indicadores de saúde.", accent: "bg-rose-700" },
   { href: "/annotations", title: "Anotações", description: "Organize protocolos com demandas numeradas e escreva anotações completas em Markdown.", accent: "bg-violet-700" },
+  { href: "/monthly-diary", title: "Diário Mensal", description: "Escreva o que aconteceu em cada dia e acompanhe, de relance, Klap e exercícios no mês.", accent: "bg-fuchsia-700" },
 ];
 
 export default async function Home() {

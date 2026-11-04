@@ -31,6 +31,7 @@ export async function GET() {
     supabase.from("body_measurement_values").select("id, session_id, measurement_type_id, value, created_at, updated_at").eq("user_id", userId).order("created_at"),
     supabase.from("health_sleep_settings").select("goal_minutes, created_at, updated_at").eq("user_id", userId),
     supabase.from("health_sleep_entries").select("id, slept_on, sleep_time, wake_time, quality_score, description, duration_minutes, created_at, updated_at").eq("user_id", userId).order("slept_on"),
+    supabase.from("monthly_diary_entries").select("id, entry_date, notes, did_klap, did_exercise, created_at, updated_at").eq("user_id", userId).order("entry_date"),
     supabase.from("protocols").select("id, title, created_at, updated_at").eq("user_id", userId).order("created_at"),
     supabase.from("protocol_demands").select("id, protocol_id, content, sort_order, created_at, updated_at").eq("user_id", userId).order("protocol_id").order("sort_order"),
     supabase.from("markdown_notes").select("id, title, content, created_at, updated_at").eq("user_id", userId).order("created_at"),
@@ -53,9 +54,10 @@ export async function GET() {
     body_measurement_values: results[7].data ?? [],
     health_sleep_settings: results[8].data ?? [],
     health_sleep_entries: results[9].data ?? [],
-    protocols: results[10].data ?? [],
-    protocol_demands: results[11].data ?? [],
-    markdown_notes: results[12].data ?? [],
+    monthly_diary_entries: results[10].data ?? [],
+    protocols: results[11].data ?? [],
+    protocol_demands: results[12].data ?? [],
+    markdown_notes: results[13].data ?? [],
   };
   const backup: PersonalBackup = {
     format: PERSONAL_BACKUP_FORMAT,

@@ -1,5 +1,5 @@
 export const PERSONAL_BACKUP_FORMAT = "diary-tracker-personal-backup";
-export const PERSONAL_BACKUP_VERSION = 2;
+export const PERSONAL_BACKUP_VERSION = 3;
 export const PERSONAL_BACKUP_MAX_BYTES = 8 * 1024 * 1024;
 
 export const personalBackupCollections = [
@@ -13,6 +13,7 @@ export const personalBackupCollections = [
   "body_measurement_values",
   "health_sleep_settings",
   "health_sleep_entries",
+  "monthly_diary_entries",
   "protocols",
   "protocol_demands",
   "markdown_notes",
@@ -23,7 +24,7 @@ export type PersonalBackupData = Record<PersonalBackupCollection, unknown[]>;
 
 export type PersonalBackup = {
   format: typeof PERSONAL_BACKUP_FORMAT;
-  version: 1 | typeof PERSONAL_BACKUP_VERSION;
+  version: 1 | 2 | typeof PERSONAL_BACKUP_VERSION;
   exportedAt: string;
   data: PersonalBackupData;
 };
@@ -40,7 +41,7 @@ export function parsePersonalBackup(value: string): PersonalBackup {
     throw new Error("O arquivo não contém um JSON válido.");
   }
 
-  if (!isRecord(parsed) || parsed.format !== PERSONAL_BACKUP_FORMAT || (parsed.version !== 1 && parsed.version !== PERSONAL_BACKUP_VERSION) || !isRecord(parsed.data)) {
+  if (!isRecord(parsed) || parsed.format !== PERSONAL_BACKUP_FORMAT || (parsed.version !== 1 && parsed.version !== 2 && parsed.version !== PERSONAL_BACKUP_VERSION) || !isRecord(parsed.data)) {
     throw new Error("Este arquivo não é um backup compatível do Diary Tracker.");
   }
 
@@ -52,6 +53,10 @@ export function parsePersonalBackup(value: string): PersonalBackup {
   const data = {} as PersonalBackupData;
   for (const collection of personalBackupCollections) {
     const rows = parsed.data[collection];
+    if ((parsed.version === 1 || parsed.version === 2) && collection === "monthly_diary_entries" && rows === undefined) {
+      data[collection] = [];
+      continue;
+    }
     if (parsed.version === 1 && (collection === "health_sleep_settings" || collection === "health_sleep_entries") && rows === undefined) {
       data[collection] = [];
       continue;

@@ -71,6 +71,11 @@ Este documento registra o estado observado no código e nas migrações do proje
 - Visualização formatada de títulos, listas, tabelas, links, citações e blocos de código em Markdown.
 - Edição de notas e listagem por atualização mais recente.
 
+### Diário Mensal
+
+- Grade mensal de acesso rápido para anotação livre por dia.
+- Marcadores independentes de Klap e exercício, com totais e percentuais mensais.
+
 ### Backup e restauração
 
 - Download de backup JSON dos registros pessoais de atividades, tarefas, rotina diária, saúde, protocolos e anotações.

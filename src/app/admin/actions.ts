@@ -58,6 +58,7 @@ export async function restorePersonalBackup(
 
   revalidatePath("/", "layout");
   revalidatePath("/admin/data");
+  revalidatePath("/monthly-diary");
   await recordSecurityAccessEvent(userId, "backup_restore_succeeded");
   return {
     status: "success",

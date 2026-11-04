@@ -67,6 +67,10 @@ Execute também `migrations/20261010010000_allow_imported_sleep_entries.sql`. El
 
 Na tela **Dados de Saúde > Minhas medidas corporais > Importar**, baixe o modelo CSV. O formato usa uma linha por medida: `date;body_part;value;unit;instructions`. Datas podem estar em `DD/MM/AAAA` ou `AAAA-MM-DD`; uma linha cuja parte do corpo seja `Peso` alimenta o histórico de peso em kg. Salve a planilha como CSV antes de enviá-la.
 
+### Ativar Diário Mensal
+
+Execute `migrations/20261103010000_add_monthly_diary.sql`. Ela cria o diário de texto livre por dia, com os marcadores Klap e Exercício, incluindo RLS e suporte ao backup pessoal.
+
 ### Ativar Anotações
 
 Execute `migrations/20260925000000_add_annotations.sql`. Ela cria protocolos, demandas ordenadas e anotações em Markdown, com RLS por usuário e funções transacionais para salvar a ordem das demandas.
