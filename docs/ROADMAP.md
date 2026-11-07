@@ -81,6 +81,10 @@ Este documento registra o estado observado no código e nas migrações do proje
 - Múltiplas agendas pessoais para representar visualmente um ciclo diário.
 - Horário inicial configurável, blocos sequenciais com cor e atividade, e validação de fechamento exato em 24 horas.
 
+### Quick Notes
+
+- Um bloco único de anotação rápida por pessoa, com salvamento e limpeza completa do conteúdo.
+
 ### Backup e restauração
 
 - Download de backup JSON dos registros pessoais de atividades, tarefas, rotina diária, saúde, protocolos e anotações.

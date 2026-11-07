@@ -79,6 +79,10 @@ Execute `migrations/20260925000000_add_annotations.sql`. Ela cria protocolos, de
 
 Execute `migrations/20261105010000_add_agenda.sql`. Ela cria agendas pessoais e seus intervalos ordenados. Cada agenda começa em um horário escolhido e precisa fechar um ciclo completo de 24 horas; o banco também valida essa regra.
 
+### Ativar Quick Notes
+
+Execute a migração migrations/20261107010000_add_quick_notes.sql. Ela cria uma única anotação rápida privada por pessoa, que pode ser salva e apagada integralmente.
+
 ### Ativar backup, restauração e diagnóstico técnico
 
 Execute `migrations/20260925010000_add_observability_and_backup_restore.sql`. Ela cria o registro privado de erros técnicos e a função transacional usada para restaurar backups pessoais. Depois, a área **Administração** disponibiliza:
