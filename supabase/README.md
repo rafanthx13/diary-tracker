@@ -75,6 +75,10 @@ Execute `migrations/20261103010000_add_monthly_diary.sql`. Ela cria o diário de
 
 Execute `migrations/20260925000000_add_annotations.sql`. Ela cria protocolos, demandas ordenadas e anotações em Markdown, com RLS por usuário e funções transacionais para salvar a ordem das demandas.
 
+### Ativar Agenda
+
+Execute `migrations/20261105010000_add_agenda.sql`. Ela cria agendas pessoais e seus intervalos ordenados. Cada agenda começa em um horário escolhido e precisa fechar um ciclo completo de 24 horas; o banco também valida essa regra.
+
 ### Ativar backup, restauração e diagnóstico técnico
 
 Execute `migrations/20260925010000_add_observability_and_backup_restore.sql`. Ela cria o registro privado de erros técnicos e a função transacional usada para restaurar backups pessoais. Depois, a área **Administração** disponibiliza:

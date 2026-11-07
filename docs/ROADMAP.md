@@ -76,6 +76,11 @@ Este documento registra o estado observado no código e nas migrações do proje
 - Grade mensal de acesso rápido para anotação livre por dia.
 - Marcadores independentes de Klap e exercício, com totais e percentuais mensais.
 
+### Agenda
+
+- Múltiplas agendas pessoais para representar visualmente um ciclo diário.
+- Horário inicial configurável, blocos sequenciais com cor e atividade, e validação de fechamento exato em 24 horas.
+
 ### Backup e restauração
 
 - Download de backup JSON dos registros pessoais de atividades, tarefas, rotina diária, saúde, protocolos e anotações.

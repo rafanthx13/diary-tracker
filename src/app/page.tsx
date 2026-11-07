@@ -9,6 +9,7 @@ const modules = [
   { href: "/health-data", title: "Dados de Saúde", description: "Acompanhe peso, medidas corporais e a evolução dos seus indicadores de saúde.", accent: "bg-rose-700" },
   { href: "/annotations", title: "Anotações", description: "Organize protocolos com demandas numeradas e escreva anotações completas em Markdown.", accent: "bg-violet-700" },
   { href: "/monthly-diary", title: "Diário Mensal", description: "Escreva o que aconteceu em cada dia e acompanhe, de relance, Klap e exercícios no mês.", accent: "bg-fuchsia-700" },
+  { href: "/agenda", title: "Agenda", description: "Desenhe o ciclo de 24 horas do seu dia em blocos coloridos de atividades.", accent: "bg-sky-700" },
 ];
 
 export default async function Home() {
